@@ -1,4 +1,10 @@
-# syntax=docker/dockerfile:1
+# No `# syntax=` directive on purpose.
+#
+# That directive makes the builder pull docker/dockerfile from Docker Hub
+# before it reads a single line, which fails the whole build when a hosted
+# builder cannot reach the registry. Nothing here needs BuildKit-specific
+# syntax - these are plain instructions the default frontend understands - so
+# the dependency is not worth the outage.
 #
 # Repo-root build: the image carries both the API and the portal, because the
 # service serves them from one origin. Railway, Render and Fly all build this
