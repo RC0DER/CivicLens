@@ -87,7 +87,7 @@ S3_REGION=auto
 AWS_ACCESS_KEY_ID=<r2-access-key-id>
 AWS_SECRET_ACCESS_KEY=<r2-secret-access-key>
 TRUSTED_HOSTS=*.up.railway.app
-CORS_ORIGINS=https://civiclens-public.up.railway.app
+CORS_ORIGINS=none
 METRICS_TOKEN=<METRICS_TOKEN>
 ```
 
@@ -106,7 +106,7 @@ S3_REGION=auto
 AWS_ACCESS_KEY_ID=<r2-access-key-id>
 AWS_SECRET_ACCESS_KEY=<r2-secret-access-key>
 TRUSTED_HOSTS=*.up.railway.app
-CORS_ORIGINS=https://civiclens-dept.up.railway.app
+CORS_ORIGINS=none
 METRICS_TOKEN=<METRICS_TOKEN>
 ```
 
@@ -133,7 +133,7 @@ S3_REGION=auto
 AWS_ACCESS_KEY_ID=<r2-access-key-id>
 AWS_SECRET_ACCESS_KEY=<r2-secret-access-key>
 TRUSTED_HOSTS=*.up.railway.app
-CORS_ORIGINS=https://civiclens-investigator.up.railway.app
+CORS_ORIGINS=none
 METRICS_TOKEN=<METRICS_TOKEN>
 ```
 
@@ -141,6 +141,17 @@ METRICS_TOKEN=<METRICS_TOKEN>
 
 Same as **civiclens-investigator**, plus `JOB_INTERVAL_SECONDS=3600`, and set
 the start command to `jobs`.
+
+### Why `CORS_ORIGINS=none`
+
+Each service serves its own copy of the portal, so the page and the API share
+an origin and no cross-origin request ever happens. `none` says exactly that,
+and it is stricter than naming a hostname. It also means you can deploy before
+Railway has assigned a domain — the URL only exists after a successful build,
+so requiring it up front would be a deadlock.
+
+If you later put the portal on a different origin than the API, name that
+origin here instead.
 
 ## 6 · Give the public service a domain
 

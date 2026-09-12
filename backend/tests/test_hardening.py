@@ -73,6 +73,15 @@ def test_wildcard_cors_is_refused_in_production():
         _settings(profile="dept", cors_origins="*")
 
 
+def test_cors_none_is_accepted_and_allows_no_origin():
+    """A service that serves its own portal needs no cross-origin access at
+    all - and saying so must not require inventing a hostname before the
+    platform has assigned one."""
+    for value in ("none", "same-origin", ""):
+        s = _settings(profile="dept", cors_origins=value)
+        assert s.cors_origin_list == []
+
+
 def test_publishing_unproven_names_requires_a_deliberate_code_change():
     with pytest.raises(ConfigurationError, match="publishes unproven allegations"):
         _settings(profile="dept", publish_names_before_finding=True)

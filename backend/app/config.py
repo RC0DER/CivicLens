@@ -167,6 +167,16 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
+        """Origins allowed to call this API from a browser.
+
+        "none" means exactly that: no cross-origin request is permitted. It is
+        the correct setting when the service serves its own portal, which is
+        the default deployment - the page and the API share an origin, so CORS
+        never comes into it. It is also the strictest possible value, so
+        production accepts it where it rejects "*".
+        """
+        if self.cors_origins.strip().lower() in {"none", "same-origin", ""}:
+            return []
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
@@ -229,7 +239,10 @@ class Settings(BaseSettings):
             raise ConfigurationError("STORAGE_BACKEND=s3 requires S3_BUCKET.")
 
         if "*" in self.cors_origin_list:
-            raise ConfigurationError("CORS_ORIGINS=* is not acceptable in production. Name the portal's origin.")
+            raise ConfigurationError(
+                "CORS_ORIGINS=* is not acceptable in production. Name the portal's origin, or set "
+                "CORS_ORIGINS=none when this service serves its own portal and needs no cross-origin access."
+            )
         if "*" in self.trusted_host_list:
             raise ConfigurationError("TRUSTED_HOSTS=* is not acceptable in production. Name the API hostname.")
         if self.publish_names_before_finding:
