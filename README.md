@@ -16,7 +16,8 @@ Then open **http://127.0.0.1:8000**.
 |---|---|
 | `frontend/` | The portal — single page, no build step, talks to the API |
 | `backend/` | FastAPI + SQLAlchemy, Postgres in production, SQLite locally |
-| `DEPLOY.md` | How to put this on the internet, and what I need from you |
+| `RAILWAY-SETUP.md` | **Step-by-step Railway deployment** — three services, production |
+| `DEPLOY.md` | Other hosting options, and what each needs |
 | `backend/README.md` | Architecture, API reference, what is and isn't implemented |
 | `backend/docs/THREAT_MODEL.md` | Adversaries, mitigations, residual risks |
 | `backend/docs/RUNBOOK.md` | Deploys, jobs, alerts, incidents, key rotation |
