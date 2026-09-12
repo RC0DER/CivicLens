@@ -1,7 +1,15 @@
 # syntax=docker/dockerfile:1
 # Multi-stage: wheels are built with a toolchain that never reaches the
 # runtime image.
-FROM python:3.12-slim AS build
+# Base image comes from AWS's public mirror of the Docker official images,
+# not from Docker Hub directly.
+#
+# Hosted builders hit Docker Hub's rate limits and outages constantly - this
+# build failed twice with "dial tcp ... i/o timeout" against registry-1.docker.io
+# before reading a line. public.ecr.aws/docker/library/python is the same
+# upstream image, mirrored by AWS, with no pull limits for anonymous users.
+# To go back to Docker Hub, use: FROM python:3.12-slim
+FROM public.ecr.aws/docker/library/python:3.12-slim AS build
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential libqpdf-dev zlib1g-dev libjpeg62-turbo-dev \

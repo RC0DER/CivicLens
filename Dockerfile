@@ -19,7 +19,15 @@
 # `--only-binary=:all:` makes that a rule rather than a hope: if a future
 # dependency has no wheel, the build fails here with a clear message instead of
 # quietly pulling in a compiler at deploy time.
-FROM python:3.12-slim
+# Base image comes from AWS's public mirror of the Docker official images,
+# not from Docker Hub directly.
+#
+# Hosted builders hit Docker Hub's rate limits and outages constantly - this
+# build failed twice with "dial tcp ... i/o timeout" against registry-1.docker.io
+# before reading a line. public.ecr.aws/docker/library/python is the same
+# upstream image, mirrored by AWS, with no pull limits for anonymous users.
+# To go back to Docker Hub, use: FROM python:3.12-slim
+FROM public.ecr.aws/docker/library/python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
