@@ -24,9 +24,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /srv
-COPY --from=build /wheels /wheels
 COPY requirements.txt .
-RUN pip install --no-index --find-links=/wheels -r requirements.txt && rm -rf /wheels
+RUN pip install --only-binary=:all: -r requirements.txt
 
 COPY app ./app
 COPY migrations ./migrations
