@@ -264,3 +264,81 @@ def test_intake_platform_url_is_separate_from_the_case_one(clean_platform_env):
 def test_wildcard_hostnames_are_usable_for_platform_subdomains():
     s = Settings(_env_file=None, trusted_hosts="*.up.railway.app, healthcheck.railway.app")
     assert s.trusted_host_list == ["*.up.railway.app", "healthcheck.railway.app"]
+
+
+# --------------------------------------------------------------------------- object storage
+def test_s3_client_suits_compatible_services(monkeypatch):
+    """"S3-compatible" is not uniform.
+
+    Supabase Storage and MinIO need path-style addressing and reject the AWS
+    extensions. Sending an ACL to them fails every upload - which presents as a
+    500 on an otherwise healthy deployment.
+    """
+    import app.storage as storage_module
+
+    captured: dict = {}
+
+    class FakeClient:
+        def put_object(self, **kwargs):
+            captured["put"] = kwargs
+
+    def fake_boto_client(service, **kwargs):
+        captured["client"] = {"service": service, **kwargs}
+        return FakeClient()
+
+    import boto3
+
+    monkeypatch.setattr(boto3, "client", fake_boto_client)
+    monkeypatch.setattr(storage_module, "get_settings", lambda: Settings(
+        _env_file=None, storage_backend="s3", s3_bucket="civiclens-evidence",
+        s3_endpoint_url="https://ref.supabase.co/storage/v1/s3", s3_region="ap-northeast-1",
+    ))
+
+    store = storage_module.S3Storage()
+    store.put("abc123.jpg", b"\xff\xd8\xff", "image/jpeg")
+
+    assert captured["client"]["endpoint_url"] == "https://ref.supabase.co/storage/v1/s3"
+    assert captured["client"]["config"].s3["addressing_style"] == "path"
+    assert captured["client"]["config"].signature_version == "s3v4"
+
+    # The two options that break compatible services must not be sent.
+    assert "ACL" not in captured["put"]
+    assert "ServerSideEncryption" not in captured["put"]
+    assert captured["put"]["ContentType"] == "image/jpeg"
+
+
+def test_server_side_encryption_is_sent_when_configured(monkeypatch):
+    """On AWS S3 proper, encryption at rest is still available - opt in."""
+    import app.storage as storage_module
+
+    captured: dict = {}
+
+    class FakeClient:
+        def put_object(self, **kwargs):
+            captured.update(kwargs)
+
+    import boto3
+
+    monkeypatch.setattr(boto3, "client", lambda service, **kw: FakeClient())
+    monkeypatch.setattr(storage_module, "get_settings", lambda: Settings(
+        _env_file=None, storage_backend="s3", s3_bucket="b", s3_server_side_encryption="AES256",
+    ))
+    storage_module.S3Storage().put("k.jpg", b"x", "image/jpeg")
+    assert captured["ServerSideEncryption"] == "AES256"
+
+
+def test_storage_failures_are_reported_not_swallowed(monkeypatch):
+    import app.storage as storage_module
+
+    class ExplodingClient:
+        def put_object(self, **kwargs):
+            raise RuntimeError("AccessDenied")
+
+    import boto3
+
+    monkeypatch.setattr(boto3, "client", lambda service, **kw: ExplodingClient())
+    monkeypatch.setattr(storage_module, "get_settings", lambda: Settings(
+        _env_file=None, storage_backend="s3", s3_bucket="b",
+    ))
+    with pytest.raises(storage_module.StorageError, match="could not store"):
+        storage_module.S3Storage().put("k.jpg", b"x", "image/jpeg")

@@ -210,6 +210,15 @@ async def attach_evidence(
         stored = ingest(raw)
     except EvidenceRejected as exc:
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, str(exc)) from exc
+    except StorageError as exc:
+        # The case is already filed; only the attachment failed. Say so, so the
+        # reporter does not think the whole report was lost.
+        log(logger, logging.ERROR, "evidence storage failed", fault=str(exc))
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Your report was filed, but the file could not be attached. Quote the case number to the "
+            "helpline, or try attaching it again from the case page.",
+        ) from exc
 
     db.add(Evidence(case_id=case.id, stored_name=stored.stored_name, media_type=stored.media_type,
                     size_bytes=stored.size_bytes, sha256=stored.sha256,

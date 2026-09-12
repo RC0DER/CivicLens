@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     s3_bucket: str | None = None
     s3_endpoint_url: str | None = None
     s3_region: str = "ap-south-1"
+    # Supabase Storage and MinIO need path-style addressing and reject the AWS
+    # extensions; AWS S3 accepts both. Defaults suit the compatible services.
+    s3_use_path_style: bool = True
+    s3_server_side_encryption: str | None = None   # e.g. "AES256" on AWS S3
     signed_url_ttl_seconds: int = 300
     max_evidence_mb: int = 15
     max_evidence_per_case: int = 10
