@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import secrets
 import time
 from abc import ABC, abstractmethod
 
@@ -32,6 +33,17 @@ class Storage(ABC):
 
     @abstractmethod
     def signed_url(self, key: str, ttl_seconds: int | None = None) -> str: ...
+
+    @abstractmethod
+    def check(self) -> dict:
+        """Can this backend actually be written to?
+
+        Storage credentials fail in ways that only surface on the first upload,
+        by which point a citizen is looking at an error. This answers the
+        question on demand and names the fault precisely enough to fix it -
+        without echoing a key back to the caller.
+        """
+        ...
 
 
 class LocalStorage(Storage):
@@ -69,6 +81,15 @@ class LocalStorage(Storage):
         expires = int(time.time()) + (ttl_seconds or s.signed_url_ttl_seconds)
         sig = sign_local(key, expires)
         return f"/api/evidence/{key}?expires={expires}&signature={sig}"
+
+    def check(self) -> dict:
+        probe = "healthcheck-" + secrets.token_hex(4)
+        try:
+            self.put(probe, b"ok", "text/plain")
+            self.delete(probe)
+            return {"backend": "local", "writable": True, "directory": self.directory}
+        except Exception as exc:
+            return {"backend": "local", "writable": False, "detail": f"{type(exc).__name__}: {exc}"}
 
 
 def sign_local(key: str, expires: int) -> str:
@@ -147,6 +168,29 @@ class S3Storage(Storage):
             Params={"Bucket": self.bucket, "Key": key},
             ExpiresIn=ttl_seconds or s.signed_url_ttl_seconds,
         )
+
+    def check(self) -> dict:
+        """Round-trips a tiny object: listing a bucket and writing to it fail
+        differently, and it is the write that matters here."""
+        s = get_settings()
+        result: dict = {
+            "backend": "s3",
+            "endpoint": s.s3_endpoint_url or "aws",
+            "bucket": self.bucket,
+            "addressing": "path" if s.s3_use_path_style else "virtual",
+            "region": s.s3_region,
+        }
+        probe = "healthcheck-" + secrets.token_hex(4)
+        try:
+            self.put(probe, b"ok", "text/plain")
+            self.delete(probe)
+            result["writable"] = True
+        except StorageError as exc:
+            result["writable"] = False
+            # The botocore error name is the whole diagnosis: NoSuchBucket,
+            # InvalidAccessKeyId, SignatureDoesNotMatch, AccessDenied.
+            result["detail"] = str(exc)
+        return result
 
 
 _storage: Storage | None = None

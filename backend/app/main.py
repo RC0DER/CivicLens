@@ -95,6 +95,22 @@ def ready(response: Response) -> dict:
     }
 
 
+@app.get("/health/storage", tags=["ops"])
+def storage_health(authorization: str | None = Header(default=None)) -> dict:
+    """Whether evidence can actually be stored.
+
+    Token-gated where a metrics token exists, because the fault detail names
+    the bucket and endpoint. Without a token configured it is open, which is
+    the right trade for a deployment still being set up.
+    """
+    if settings.metrics_token:
+        if authorization != f"Bearer {settings.metrics_token}":
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "This check requires the metrics token.")
+    from .storage import get_storage
+
+    return get_storage().check()
+
+
 if settings.metrics_enabled:
     @app.get("/metrics", tags=["ops"], include_in_schema=False)
     def metrics(authorization: str | None = Header(default=None)) -> Response:
