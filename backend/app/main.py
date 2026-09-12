@@ -121,11 +121,39 @@ if settings.profile in ("investigator", "all"):
 # gate lives in one place rather than being split between wiring and handler.
 app.include_router(demo.router, prefix="/api")
 
+def resolve_frontend_dir(configured: str) -> str | None:
+    """Find the portal's files, whatever the layout.
+
+    The repository nests the app one level deeper than the container does
+    (`backend/app` versus `/srv/app`), so a single relative path is right in
+    one and wrong in the other - and getting it wrong serves a bare JSON 404 at
+    the site root with no error anywhere in the logs. Each plausible base is
+    tried and the first one holding an index.html wins.
+    """
+    if os.path.isabs(configured):
+        return configured if os.path.isfile(os.path.join(configured, "index.html")) else None
+
+    package = os.path.dirname(os.path.abspath(__file__))       # .../app
+    candidates = [
+        os.path.join(package, configured),                      # /srv/app/../frontend
+        os.path.join(os.path.dirname(package), configured),     # backend/../frontend
+        os.path.join(os.getcwd(), configured),
+    ]
+    for candidate in candidates:
+        resolved = os.path.abspath(candidate)
+        if os.path.isfile(os.path.join(resolved, "index.html")):
+            return resolved
+    return None
+
+
 # The portal is mounted last, at the root, so every /api and /health route
 # above takes precedence over a static file of the same name.
 if settings.serve_frontend:
-    _frontend = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", settings.frontend_dir))
-    if os.path.isdir(_frontend):
+    _frontend = resolve_frontend_dir(settings.frontend_dir)
+    if _frontend:
         app.mount("/", StaticFiles(directory=_frontend, html=True), name="portal")
     else:
-        logging.getLogger("civiclens").warning("frontend directory not found: %s", _frontend)
+        logging.getLogger("civiclens").error(
+            "SERVE_FRONTEND is on but no portal was found for FRONTEND_DIR=%s - "
+            "the site root will return 404", settings.frontend_dir,
+        )

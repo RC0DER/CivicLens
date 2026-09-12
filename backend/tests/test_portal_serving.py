@@ -136,3 +136,45 @@ def test_demo_endpoint_serves_only_listed_accounts(client, monkeypatch):
                         lambda: live.model_copy(update={"demo_mode": True}))
     codes = client.get("/api/demo/accounts").json()["accounts"]
     assert all(account["employee_code"] != "REAL/OFFICER/0001" for account in codes)
+
+
+# --------------------------------------------------------------------------- layout
+def test_portal_is_found_in_both_repo_and_container_layouts(tmp_path, monkeypatch):
+    """The repo nests the app a level deeper than the container does.
+
+    A single relative path is correct in one and wrong in the other, and the
+    failure mode is silent: the site root returns a bare JSON 404 while every
+    API route keeps working, so health checks stay green.
+    """
+    from app.main import resolve_frontend_dir
+
+    # container: /srv/app + /srv/frontend
+    container = tmp_path / "srv"
+    (container / "app").mkdir(parents=True)
+    (container / "frontend").mkdir()
+    (container / "frontend" / "index.html").write_text("<title>CivicLens</title>")
+
+    # repo: project/backend/app + project/frontend
+    repo = tmp_path / "project"
+    (repo / "backend" / "app").mkdir(parents=True)
+    (repo / "frontend").mkdir()
+    (repo / "frontend" / "index.html").write_text("<title>CivicLens</title>")
+
+    import app.main as main_module
+
+    for package_dir, expected in [
+        (container / "app", container / "frontend"),
+        (repo / "backend" / "app", repo / "frontend"),
+    ]:
+        monkeypatch.setattr(main_module, "__file__", str(package_dir / "main.py"))
+        assert resolve_frontend_dir("../frontend") == str(expected)
+
+
+def test_absolute_frontend_dir_is_honoured(tmp_path, monkeypatch):
+    from app.main import resolve_frontend_dir
+
+    portal = tmp_path / "portal"
+    portal.mkdir()
+    assert resolve_frontend_dir(str(portal)) is None      # no index.html yet
+    (portal / "index.html").write_text("<title>CivicLens</title>")
+    assert resolve_frontend_dir(str(portal)) == str(portal)

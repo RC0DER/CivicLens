@@ -32,8 +32,8 @@ COPY backend/alembic.ini backend/gunicorn.conf.py ./
 COPY backend/docker-entrypoint.sh /usr/local/bin/entrypoint
 COPY frontend ./frontend
 
-# FRONTEND_DIR is resolved relative to the app package, matching the local layout.
-ENV FRONTEND_DIR=../frontend
+# Absolute, so serving the portal never depends on how deep the app sits.
+ENV FRONTEND_DIR=/srv/frontend
 
 RUN chmod +x /usr/local/bin/entrypoint \
     && useradd --system --uid 10001 --home /srv civiclens \
