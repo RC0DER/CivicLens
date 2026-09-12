@@ -44,7 +44,18 @@ class Settings(BaseSettings):
     profile: Profile = "all"
     service_name: str = "civiclens-api"
     port: int = 8000
-    version: str = "1.1.0"
+    version: str = "1.2.0"
+
+    # Platforms inject the deployed commit. Reporting it turns "is my fix
+    # live?" from a guess into a fact - the question that costs the most time
+    # during a deploy that is not behaving.
+    railway_git_commit_sha: str | None = None
+    git_commit_sha: str | None = None
+
+    @property
+    def commit(self) -> str:
+        sha = self.railway_git_commit_sha or self.git_commit_sha
+        return sha[:8] if sha else "unknown"
 
     # ---------------------------------------------------------------- storage
     case_db_url: str = "sqlite:///./data/case.db"

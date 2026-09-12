@@ -75,7 +75,12 @@ errors.install(app)
 def live() -> dict:
     """Process is up. Deliberately does not touch the database, so a database
     blip does not cause an orchestrator to restart healthy processes."""
-    return {"status": "ok", "service": settings.service_name, "version": settings.version}
+    return {
+        "status": "ok",
+        "service": settings.service_name,
+        "version": settings.version,
+        "commit": settings.commit,
+    }
 
 
 @app.get("/health/ready", tags=["ops"])
