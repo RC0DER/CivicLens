@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check app scripts tests
+
+      - name: Type check
+        run: mypy app
+
+      - name: Tests
+        run: pytest --cov=app --cov-report=term-missing --cov-fail-under=80
+
+      # The separation tests are the ones that must never be skipped or
+      # xfailed into silence, so they are also asserted to have run.
+      - name: Privacy guarantees
+        run: pytest tests/test_separation.py tests/test_hardening.py -q
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t civiclens-api:ci .
+      - name: Fail if the image runs as root
+        run: |
+          user=$(docker run --rm --entrypoint id civiclens-api:ci -un)
+          test "$user" = "civiclens" || { echo "image runs as $user"; exit 1; }

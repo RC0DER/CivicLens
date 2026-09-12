@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CivicLens — Corruption Reporting &amp; Transparency Platform</title>
+<meta name="description" content="File a corruption report without giving your name. Track any case from intake to penalty. Public register of complaints against municipal offices.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><circle cx='24' cy='24' r='22' fill='none' stroke='%238A6A1F' stroke-width='3'/><path d='M24 12L34.4 18v12L24 36 13.6 30V18z' fill='none' stroke='%23171C1A' stroke-width='3'/><circle cx='24' cy='24' r='4' fill='%238A6A1F'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Site navigation">
+  <div class="drawer-brand">
+    <svg class="seal" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+      <circle cx="24" cy="24" r="19" fill="none" stroke="var(--brass)" stroke-width="1" opacity=".55"/>
+      <g stroke="var(--brass)" stroke-width="1.6" stroke-linecap="round" fill="none">
+        <path d="M24 12L17.5 6.15"/><path d="M13.61 18L5.29 20.7"/><path d="M13.61 30L11.79 38.56"/>
+        <path d="M24 36L30.5 41.85"/><path d="M34.39 30L42.71 27.3"/><path d="M34.39 18L36.21 9.44"/>
+      </g>
+      <path d="M24 12L34.39 18v12L24 36 13.61 30V18z" fill="var(--brass)" opacity=".14"/>
+      <path d="M24 12L34.39 18v12L24 36 13.61 30V18z" fill="none" stroke="var(--ink)" stroke-width="1.9" stroke-linejoin="round"/>
+      <circle cx="24" cy="24" r="3.6" fill="var(--brass)"/>
+    </svg>
+    <div><b>Civic<span style="color:var(--brass)">Lens</span></b><span>Civic access</span></div>
+  </div>
+  <nav id="drawerNav">
+    <button data-go="home" aria-current="page">Home</button>
+    <button data-go="me">My Dashboard</button>
+    <button data-go="report">Report Corruption</button>
+    <button data-go="track">Track Complaint</button>
+    <button data-go="map">Transparency Map</button>
+    <button data-go="news">Verified Bulletins</button>
+    <button data-go="official">Official Portal</button>
+    <button data-go="about">About &amp; Contact</button>
+  </nav>
+  <div class="drawer-foot">
+    <p>Anti-Corruption Ombudsman · Municipal Region</p>
+    <p style="margin-top:6px">Helpline 1800-11-0031 · Open 24h</p>
+  </div>
+</aside>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <button class="icon-btn" id="menuBtn" aria-label="Open navigation menu" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <svg class="seal" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+      <circle cx="24" cy="24" r="19" fill="none" stroke="var(--brass)" stroke-width="1" opacity=".55"/>
+      <g stroke="var(--brass)" stroke-width="1.6" stroke-linecap="round" fill="none">
+        <path d="M24 12L17.5 6.15"/><path d="M13.61 18L5.29 20.7"/><path d="M13.61 30L11.79 38.56"/>
+        <path d="M24 36L30.5 41.85"/><path d="M34.39 30L42.71 27.3"/><path d="M34.39 18L36.21 9.44"/>
+      </g>
+      <path d="M24 12L34.39 18v12L24 36 13.61 30V18z" fill="var(--brass)" opacity=".14"/>
+      <path d="M24 12L34.39 18v12L24 36 13.61 30V18z" fill="none" stroke="var(--ink)" stroke-width="1.9" stroke-linejoin="round"/>
+      <circle cx="24" cy="24" r="3.6" fill="var(--brass)"/>
+    </svg>
+    <div class="brand">
+      <b>Civic<span style="color:var(--brass)">Lens</span></b>
+      <span>Corruption Reporting &amp; Transparency Platform</span>
+    </div>
+    <div class="masthead-tools">
+      <span class="offline-note" id="offlineNote" hidden>Register unreachable</span>
+      <button class="icon-btn" id="themeBtn" aria-label="Switch between day and night mode">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.8M8 13.2V15M15 8h-1.8M2.8 8H1M12.9 3.1l-1.3 1.3M4.4 11.6l-1.3 1.3M12.9 12.9l-1.3-1.3M4.4 4.4L3.1 3.1"/></svg>
+      </button>
+      <button class="btn" id="signinBtn" data-go="official" style="padding:7px 14px;font-size:13px;display:flex;align-items:center;gap:7px">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6.5 2H12a1.5 1.5 0 011.5 1.5v9A1.5 1.5 0 0112 14H6.5M9 8H2.5M5 5L2 8l3 3"/></svg>
+        Sign in
+      </button>
+      <div class="profile-wrap" id="profileWrap" hidden>
+        <button class="profile-btn" id="profileBtn" aria-expanded="false" aria-haspopup="true" aria-controls="profileMenu">
+          <span class="avatar" id="avatarTop">GOV</span>
+          <span class="who"><b id="handleTop">—</b><span id="roleTop">Signed in</span></span>
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6.5L8 10.5l4-4"/></svg>
+        </button>
+        <div class="profile-menu" id="profileMenu" role="menu">
+          <div class="pm-head">
+            <span class="avatar" id="avatarMenu">GOV</span>
+            <div>
+              <div style="font-family:var(--mono);font-size:13px;font-weight:600" id="handleMenu">—</div>
+              <div style="font-size:11.5px;color:var(--muted)" id="roleMenu">Departmental account</div>
+            </div>
+          </div>
+          <div class="pm-links">
+            <button role="menuitem" data-go="official">Departmental portal</button>
+            <button role="menuitem" data-go="audit">My access log</button>
+            <button role="menuitem" class="danger" id="signoutBtn">Sign out</button>
+          </div>
+          <p class="pm-note">Every case file you open is written to an audit log against this employee code.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ==================== HOME ==================== -->
+<section class="view active" id="v-home">
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Office of the Anti-Corruption Ombudsman</div>
+      <h1>The register stays open. The reporter stays unknown.</h1>
+      <p class="motto">Expose corruption. Protect truth.</p>
+      <p class="lede">File a bribery, procurement-fraud or misconduct report without giving your name, number or any identifier. Every report receives a permanent case number that you — and anyone else — can follow from intake to penalty.</p>
+      <div class="hero-actions">
+        <button class="btn" data-go="report">Report corruption</button>
+        <button class="btn ghost" data-go="track">Track a case number</button>
+      </div>
+    </div>
+    <div class="integrity">
+      <div class="eyebrow">Platform integrity index</div>
+      <div class="score-row"><span class="score" id="integrityScore">—</span><span style="font-size:13px;color:var(--muted)">of reports acted on</span></div>
+      <div class="meter" id="integrityMeter"></div>
+      <div class="legend" id="integrityLegend"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        Acted on = assigned to a named investigator or beyond. Recomputed at every status change.</p>
+    </div>
+  </div>
+
+  <div class="stats" style="margin-top:26px">
+    <div class="stat"><div class="eyebrow">Reports filed</div><b id="kTotal" class="skeleton">0000</b><div class="delta">on the public register</div></div>
+    <div class="stat"><div class="eyebrow">Under investigation</div><b id="kActive" class="skeleton">000</b><div class="delta">with external investigators</div></div>
+    <div class="stat"><div class="eyebrow">Confirmed &amp; penalised</div><b id="kConfirmed" class="skeleton">000</b><div class="delta">penalty on public record</div></div>
+    <div class="stat"><div class="eyebrow">Median days to assign</div><b id="kDays" class="skeleton">00</b><div class="delta">statutory limit: 14 days</div></div>
+  </div>
+
+  <div class="section-title"><h2>Latest entries in the register</h2><div class="rule"></div>
+    <span class="eyebrow" id="regCount"></span></div>
+  <div class="panel">
+    <div class="searchbar">
+      <input type="text" id="homeSearch" placeholder="Search by case number, department or district — e.g. CRTP-2026-, Water Supply, Central Delhi" aria-label="Search the register">
+      <button class="btn ghost" id="homeSearchClear">Clear</button>
+    </div>
+    <div id="homeCases"></div>
+    <div id="homePager" style="display:flex;gap:8px;align-items:center;margin-top:14px"></div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:20px">
+    <div class="panel">
+      <div class="panel-head">
+        <div><div class="eyebrow">Case load by status</div><h3>What the register holds</h3></div>
+      </div>
+      <div class="chart-wrap" id="chartWrap"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div><div class="eyebrow">Public audit trail</div><h3>Verified ledger</h3></div>
+        <span class="chip" id="ledgerState"></span></div>
+      <div class="ledger" id="ledger"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">Each line is a milestone hash written when a case changes state. Entries are append-only, and the chain is verified on load.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== REPORT ==================== -->
+<section class="view" id="v-report">
+  <div class="grid cols-2" style="align-items:start">
+    <div class="panel">
+      <div class="eyebrow">Form ACB-1 · Corruption report</div>
+      <h2 style="font-size:26px;margin:6px 0 10px">File a report</h2>
+      <p style="color:var(--ink-2);font-size:14px;max-width:56ch">Nothing on this form is mandatory except the department, the office address and what happened. Leave every other field blank and the report is still accepted in full.</p>
+
+      <form id="reportForm" style="margin-top:22px" novalidate>
+        <div class="fieldset" style="margin-top:0">
+          <div class="fs-head"><span class="eyebrow">Part A</span><h4>What and where</h4><div class="rule"></div></div>
+        </div>
+        <div class="field">
+          <label for="rType">Nature of the misconduct</label>
+          <select id="rType"></select>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+          <div class="field">
+            <label for="rDept">Department or office</label>
+            <select id="rDept"></select>
+          </div>
+          <div class="field">
+            <label for="rWard">Ward / zone</label>
+            <select id="rWard"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="rAmount">Amount demanded or misappropriated <span class="hint" style="font-weight:400">— optional</span></label>
+          <input type="text" id="rAmount" placeholder="e.g. ₹4,500 in cash, or ₹12.4 lakh contract value">
+        </div>
+
+        <div class="fieldset">
+          <div class="fs-head"><span class="eyebrow">Part B</span><h4>Official complained against</h4><div class="rule"></div></div>
+          <p class="fs-note">Give whatever you know. A designation and a counter number are often enough to identify the desk; a name is not required.</p>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+            <div class="field">
+              <label for="rName">Name of the employee <span class="hint" style="font-weight:400">— if known</span></label>
+              <input type="text" id="rName" placeholder="As it appears on the name plate or receipt">
+            </div>
+            <div class="field">
+              <label for="rDesig">Designation or desk</label>
+              <input type="text" id="rDesig" placeholder="e.g. Junior Engineer, Counter 3">
+            </div>
+          </div>
+          <div class="field">
+            <label for="rEmpCode">Employee code on the identity card <span class="hint" style="font-weight:400">— if visible</span></label>
+            <input type="text" id="rEmpCode" placeholder="e.g. MCD/BPA/2017/0219">
+          </div>
+          <div class="notice" style="margin-top:4px">
+            A name you give here is <b>not published</b> while the case is unproven. It goes to the investigator and to the department, and reaches the public register only if a finding substantiates it.
+          </div>
+        </div>
+
+        <div class="fieldset">
+          <div class="fs-head"><span class="eyebrow">Part C</span><h4>Address of the office</h4><div class="rule"></div></div>
+          <p class="fs-note">This decides which Ombudsman bench takes the file, so it is the one part worth getting exact.</p>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+            <div class="field">
+              <label for="rState">State or union territory</label>
+              <select id="rState"></select>
+            </div>
+            <div class="field">
+              <label for="rDistrict">District</label>
+              <input type="text" id="rDistrict" placeholder="e.g. Central Delhi">
+            </div>
+          </div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+            <div class="field">
+              <label for="rCity">City, town or village</label>
+              <input type="text" id="rCity" placeholder="e.g. New Delhi">
+            </div>
+            <div class="field">
+              <label for="rPin">PIN code</label>
+              <input type="text" id="rPin" placeholder="6 digits" inputmode="numeric" maxlength="6">
+            </div>
+          </div>
+          <div class="field">
+            <label for="rLocal">Local address of the office</label>
+            <textarea id="rLocal" style="min-height:72px" placeholder="Building, block, floor, room or counter number, street"></textarea>
+          </div>
+        </div>
+
+        <div class="fieldset">
+          <div class="fs-head"><span class="eyebrow">Part D</span><h4>The incident</h4><div class="rule"></div></div>
+        </div>
+        <div class="field">
+          <label for="rDetail">What happened</label>
+          <textarea id="rDetail" placeholder="Describe the incident: what was asked for, by which desk or designation, when, and what happened when you refused. Do not include your own name here."></textarea>
+          <span class="hint">Designations help. Do not type your own identifying details — they would be published with the case.</span>
+        </div>
+
+        <div class="field">
+          <label for="rFile">Evidence <span class="hint" style="font-weight:400">— optional</span></label>
+          <input type="file" id="rFile" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">
+          <div class="dropzone" id="dropzone" role="button" tabindex="0">
+            <b>Attach a photograph, receipt or scanned document</b><br>
+            JPEG, PNG, WebP or PDF. Location, device and authorship data are stripped on the server before the file is stored.
+          </div>
+          <ul class="filelist" id="fileList"></ul>
+        </div>
+
+        <div class="field">
+          <label>Identity handling</label>
+          <div class="radio-set">
+            <label><input type="radio" name="anon" value="anon" checked> File fully anonymously</label>
+            <label><input type="radio" name="anon" value="contact"> Allow encrypted follow-up</label>
+          </div>
+          <span class="hint" id="anonHint">No contact field is stored. Your case number is the only way back to this report — save it.</span>
+        </div>
+
+        <div class="field" id="contactField" hidden>
+          <label for="rContact">Contact number for the investigator only</label>
+          <input type="tel" id="rContact" placeholder="10-digit mobile">
+          <span class="hint">Sealed into a separate encrypted store, on a different database, reachable only by the Ombudsman's investigators. Never visible in the departmental portal.</span>
+        </div>
+
+        <div id="reportBanner"></div>
+
+        <button class="btn" type="submit" id="reportSubmit" style="width:100%;padding:12px">Submit report and issue case number</button>
+        <p class="hint" style="margin-top:10px;text-align:center">Filing a knowingly false report is an offence under s.182 IPC.</p>
+      </form>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="panel" id="receiptSlot">
+        <div class="eyebrow">What you get back</div>
+        <h3 style="font-size:19px;margin:6px 0 10px">A case number, and nothing else to lose</h3>
+        <p style="font-size:13.5px;color:var(--ink-2)">On submission the report is separated from your session. No address, no browser fingerprint and no timestamp finer than the calendar day are attached to it. The case number appears once — write it down.</p>
+        <div class="receipt" style="margin-top:16px">
+          <div class="eyebrow">Example receipt</div>
+          <div class="cidbig" style="color:var(--muted)">CRTP-2026-0000<span style="color:var(--brass)">00</span></div>
+          <p style="font-size:12.5px;color:var(--muted)">Your own number is generated on submit.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Protection in force</div>
+        <h3 style="font-size:19px;margin:6px 0 12px">Four separations</h3>
+        <ol style="margin:0;padding-left:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:9px">
+          <li><b style="color:var(--ink)">Identity from report.</b> Contact details, where given, sit in a separate database keyed by a one-way token. The case file has no column to hold them.</li>
+          <li><b style="color:var(--ink)">Report from department.</b> Officials of the accused office see the allegation and the timeline. The service that answers them holds no key to the contact store.</li>
+          <li><b style="color:var(--ink)">Investigator from office.</b> Cases route to an investigator outside the department complained against — refused in code, not by policy.</li>
+          <li><b style="color:var(--ink)">Outcome from silence.</b> Every status change is written to the public ledger, whether or not it favours the department.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TRACK ==================== -->
+<section class="view" id="v-track">
+  <div class="eyebrow">Case lifecycle</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">Track a complaint</h2>
+  <p style="color:var(--ink-2);max-width:62ch">Enter any case number — yours or anyone's. Tracking is open to all: journalists, watchdogs and citizens see the same record the complainant sees.</p>
+
+  <div class="searchbar" style="margin-top:20px;max-width:620px">
+    <input type="text" id="trackInput" placeholder="CRTP-2026-004417" aria-label="Case number">
+    <button class="btn" id="trackBtn">Track</button>
+  </div>
+  <p class="hint" style="color:var(--muted);font-size:12.5px">Try <button id="sampleBtn" style="background:none;border:0;padding:0;font:inherit;color:var(--brass);text-decoration:underline;cursor:pointer">a case from the register</button> or any number you hold.</p>
+
+  <div id="trackResult" style="margin-top:22px"></div>
+
+  <div class="panel" style="margin-top:22px">
+    <div class="eyebrow">Saved on this device</div>
+    <h3 style="font-size:18px;margin:6px 0 12px">Your case numbers</h3>
+    <div id="savedList"></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:12px">Held only in this browser, never sent anywhere. Clearing your browser data erases this list — the cases themselves are unaffected.</p>
+  </div>
+</section>
+
+<!-- ==================== MY DASHBOARD ==================== -->
+<section class="view" id="v-me">
+  <div class="eyebrow">Your activity on this device</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">My dashboard</h2>
+  <p style="color:var(--ink-2);max-width:64ch">Assembled in this browser from the case numbers you hold, each one fetched live from the register. The platform has no account for you, and no record on its side connects these cases to each other or to you.</p>
+
+  <div class="stats" style="margin-top:20px">
+    <div class="stat"><div class="eyebrow">Reports you filed</div><b id="meFiled">0</b><div class="delta">from this browser</div></div>
+    <div class="stat"><div class="eyebrow">Awaiting an investigator</div><b id="mePending">0</b><div class="delta">14-day limit applies</div></div>
+    <div class="stat"><div class="eyebrow">Under investigation</div><b id="meActive">0</b><div class="delta">assigned outside the department</div></div>
+    <div class="stat"><div class="eyebrow">Confirmed with penalty</div><b id="meConfirmed">0</b><div class="delta">published on the ledger</div></div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:20px;align-items:start">
+    <div class="panel">
+      <div class="panel-head"><div><div class="eyebrow">Filed from this device</div><h3>Your reports</h3></div></div>
+      <div id="meCases"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="panel">
+        <div class="eyebrow">Filed from another device</div>
+        <h3 style="font-size:17px;margin:6px 0 10px">Add a case by number</h3>
+        <form id="restoreForm" novalidate>
+          <div class="field">
+            <label for="restoreId">Case number</label>
+            <input type="text" id="restoreId" placeholder="CRTP-2026-004417" autocomplete="off">
+            <span class="hint">The case number is the whole credential. Anyone holding it can follow the case — which is why it is the only thing worth keeping.</span>
+          </div>
+          <button class="btn ghost" type="submit" style="width:100%;padding:10px">Add to this device</button>
+          <div id="restoreBanner"></div>
+        </form>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">What this dashboard is not</div>
+        <h3 style="font-size:17px;margin:6px 0 10px">A profile with nothing in it</h3>
+        <p style="font-size:13.5px;color:var(--ink-2)">There is no name, email or phone number attached to this list, because the platform has no field to hold one. Clearing it removes the numbers from this browser; the reports themselves stay on the public register permanently.</p>
+        <p style="margin-top:12px"><button class="btn ghost" id="clearDeviceBtn" style="padding:7px 13px;font-size:12.5px;border-color:var(--confirmed);color:var(--confirmed)">Clear this device's list</button></p>
+        <div class="firewall" style="margin-top:14px">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>
+          <span>If someone else uses this browser, they see this list. On a shared or public machine, clear it before you leave.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== MAP ==================== -->
+<section class="view" id="v-map">
+  <div class="eyebrow">Civic intelligence</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">Corruption density map</h2>
+  <p style="color:var(--ink-2);max-width:64ch">Verified reports per 10,000 residents, by municipal zone, computed live from the register. Select a zone to filter the cases beneath it.</p>
+
+  <div class="panel" style="margin-top:20px">
+    <div class="panel-head">
+      <div><div class="eyebrow">Reports per 10,000 residents</div></div>
+      <div class="scalebar">low
+        <i style="background:var(--pending-bg)"></i><i style="background:var(--investigating-bg)"></i>
+        <i style="background:var(--investigating)"></i><i style="background:var(--confirmed)"></i>high</div>
+    </div>
+    <div class="zones" id="zones"></div>
+  </div>
+
+  <div class="grid cols-3" style="margin-top:20px">
+    <div class="panel" style="grid-column:span 2">
+      <div class="panel-head"><div><div class="eyebrow" id="zoneFilterLabel">All zones</div><h3>Reports in this area</h3></div>
+        <button class="btn ghost" id="clearZone" style="padding:6px 12px;font-size:12.5px">Show all zones</button></div>
+      <div id="zoneCases"></div>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">Hotspot departments</div>
+      <h3 style="font-size:18px;margin:6px 0 14px">Where reports concentrate</h3>
+      <div id="deptBars" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== NEWS ==================== -->
+<section class="view" id="v-news">
+  <div class="eyebrow">Public record</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">Verified cases &amp; penalties</h2>
+  <p style="color:var(--ink-2);max-width:64ch">Cases where the allegation was substantiated and enforcement followed. Published unedited, including the investigator code that signed the finding — and the official's name, which becomes publishable only at this point.</p>
+  <div class="panel" style="margin-top:20px" id="bulletins"></div>
+</section>
+
+<!-- ==================== OFFICIAL ==================== -->
+<section class="view" id="v-official">
+  <div id="officialLogin">
+    <div class="grid cols-2" style="align-items:start">
+      <div class="panel">
+        <div class="eyebrow">Restricted · Government personnel only</div>
+        <h2 style="font-size:26px;margin:6px 0 10px">Official access</h2>
+        <p style="font-size:14px;color:var(--ink-2);max-width:54ch">For departmental officers reviewing complaints lodged against their office, and for Ombudsman investigators. Access is granted against your employee code, and every case file opened is written to an audit log.</p>
+
+        <form id="loginForm" style="margin-top:20px" novalidate>
+          <div class="field">
+            <label for="lEmp">Employee code</label>
+            <input type="text" id="lEmp" placeholder="MCD/REV/2019/0447" autocomplete="username" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="lPass">Departmental password</label>
+            <input type="password" id="lPass" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label for="lOtp">One-time code from your authenticator</label>
+            <input type="text" id="lOtp" placeholder="6 digits" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+            <span class="hint">Codes are valid for 90 seconds and cannot be used twice.</span>
+          </div>
+          <button class="btn" type="submit" id="loginSubmit" style="width:100%;padding:11px">Verify and enter</button>
+          <div id="loginBanner"></div>
+        </form>
+
+        <div id="demoCredentials"></div>
+      </div>
+
+      <div class="panel">
+        <div class="eyebrow">What an officer can and cannot see</div>
+        <h3 style="font-size:19px;margin:6px 0 14px">The privacy firewall</h3>
+        <dl class="sanitized">
+          <dt>Allegation</dt><dd>Full text, as filed</dd>
+          <dt>Department</dt><dd>Visible</dd>
+          <dt>Office address</dt><dd>Visible</dd>
+          <dt>Evidence</dt><dd>Visible, metadata stripped, links expire</dd>
+          <dt>Timeline</dt><dd>Visible</dd>
+          <dt style="color:var(--confirmed)">Reporter name</dt><dd><span class="redact" data-len="███████████"></span></dd>
+          <dt style="color:var(--confirmed)">Reporter contact</dt><dd><span class="redact" data-len="██████████"></span></dd>
+          <dt style="color:var(--confirmed)">Intake channel</dt><dd><span class="redact" data-len="████████"></span></dd>
+          <dt style="color:var(--confirmed)">Filing time</dt><dd><span class="redact" data-len="█████"></span> <span style="color:var(--muted);font-size:12px">day only</span></dd>
+        </dl>
+        <div class="firewall">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>
+          <span>Redacted fields are not hidden in this interface — they are absent from the API that serves departmental accounts, and the process answering you holds no key to the store that has them. There is no permission level within the department that reveals them.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="officialDash" hidden>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <div class="eyebrow" id="oWho">Signed in</div>
+        <h2 style="font-size:26px;margin:6px 0 0" id="oDept">—</h2>
+        <p style="color:var(--ink-2);font-size:14px">Complaints lodged against this office. Reporter identities are absent from this view.</p>
+      </div>
+      <button class="btn ghost" id="logoutBtn">Sign out</button>
+    </div>
+
+    <div class="stats" style="margin-top:22px">
+      <div class="stat"><div class="eyebrow">Complaints received</div><b id="oTotal">0</b><div class="delta">on the register</div></div>
+      <div class="stat"><div class="eyebrow">Active investigations</div><b id="oActive">0</b><div class="delta">with external investigators</div></div>
+      <div class="stat"><div class="eyebrow">Resolved &amp; closed</div><b id="oClosed">0</b><div class="delta">findings published</div></div>
+      <div class="stat"><div class="eyebrow">Assignment overdue</div><b id="oDue">0</b><div class="delta">past the 14-day limit</div></div>
+    </div>
+
+    <div class="section-title"><h2>Case summaries</h2><div class="rule"></div></div>
+    <div class="panel" id="officialCases"></div>
+  </div>
+</section>
+
+<!-- ==================== AUDIT ==================== -->
+<section class="view" id="v-audit">
+  <div class="eyebrow">Accountability works in both directions</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">My access log</h2>
+  <p style="color:var(--ink-2);max-width:64ch">Every case file you open is recorded here and is readable by the Ombudsman. A departmental officer sees only their own entries; an investigator sees the whole trail.</p>
+  <div class="panel" style="margin-top:20px"><div id="auditList"></div></div>
+</section>
+
+<!-- ==================== ABOUT ==================== -->
+<section class="view" id="v-about">
+  <div class="grid cols-2" style="align-items:start">
+    <div class="panel">
+      <div class="eyebrow">About the platform</div>
+      <h2 style="font-size:26px;margin:6px 0 12px">Why the register is public</h2>
+      <p style="font-size:14.5px;color:var(--ink-2);max-width:62ch">A grievance that disappears into a departmental queue teaches citizens that reporting is futile. CivicLens inverts the default: the complaint is public from the moment it is filed, and the complainant is private forever.</p>
+      <p style="font-size:14.5px;color:var(--ink-2);max-width:62ch;margin-top:12px">Publication is what creates pressure. A department cannot quietly shelve a case whose status line is visible to every journalist in the city, and an investigator who lets the statutory 14-day assignment window lapse does so on the record — the breach is published to the ledger automatically.</p>
+      <div class="section-title" style="margin:26px 0 12px"><h3 style="font-size:18px">Statutory basis</h3><div class="rule"></div></div>
+      <dl class="sanitized">
+        <dt>Constituted under</dt><dd>Whistle Blowers Protection Act, 2014 — s.4 read with s.11</dd>
+        <dt>Anonymity</dt><dd>Identity disclosure barred except on written order of the competent authority</dd>
+        <dt>Assignment limit</dt><dd>14 days from intake</dd>
+        <dt>Publication limit</dt><dd>24 hours from any status change</dd>
+        <dt>Retention</dt><dd>Case record permanent; contact details destroyed at 90 days</dd>
+      </dl>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="panel">
+        <div class="eyebrow">Contact</div>
+        <h3 style="font-size:19px;margin:6px 0 12px">Reaching the Ombudsman</h3>
+        <dl class="sanitized">
+          <dt>Helpline</dt><dd>1800-11-0031 · 24 hours, no caller ID recorded</dd>
+          <dt>Walk-in</dt><dd>Ombudsman Annexe, Block C, Civic Centre — Mon–Fri, 10:00–17:00</dd>
+          <dt>Post</dt><dd>PO Box 31, Civic Centre Post Office — no return address required</dd>
+          <dt>Press</dt><dd>press@ombudsman.gov.example</dd>
+          <dt>Security</dt><dd>security@ombudsman.gov.example — see SECURITY.md</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Limits you should know</div>
+        <h3 style="font-size:19px;margin:6px 0 12px">What this platform is not</h3>
+        <p style="font-size:13.5px;color:var(--ink-2)">It is not an emergency service. If you are being threatened, call 112 first. It does not adjudicate service complaints such as delayed water connections — those belong with the municipal grievance cell. And it cannot compel prosecution: it refers substantiated findings to the prosecuting authority and publishes what happens next.</p>
+        <p style="font-size:13.5px;color:var(--ink-2);margin-top:12px">It also cannot protect you from an observer watching your own connection. If that is your risk, use a device and network that are not yours.</p>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Service status</div>
+        <h3 style="font-size:17px;margin:6px 0 10px">This deployment</h3>
+        <dl class="sanitized" id="serviceStatus"><dt>Checking</dt><dd class="skeleton">…</dd></dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="foot wrap" style="max-width:1180px">
+  <span>CivicLens · Office of the Anti-Corruption Ombudsman · Municipal Region</span>
+  <span id="footNote">Demonstration deployment — figures are illustrative.</span>
+</div>
+</main>
+
+<div class="reportbar">
+  <div class="reportbar-in">
+    <span class="pulse" aria-hidden="true"></span>
+    <p><b>Saw something?</b> Reporting takes four fields and no name.</p>
+    <button class="btn ghost" data-go="track" style="padding:9px 14px">Track a case</button>
+    <button class="btn" data-go="report" style="padding:9px 18px">Report corruption</button>
+  </div>
+</div>
+
+<script src="/api.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1852 @@
+<title>CivicLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+:root{
+  --paper:#E9EBE8; --surface:#F7F8F6; --surface-2:#DFE3DE;
+  --ink:#171C1A; --ink-2:#3D4744; --muted:#5C6763; --line:#C7CEC8; --line-strong:#A6B0A9;
+  --brass:#8A6A1F; --brass-soft:#E8DCBE;
+  --confirmed:#9B2226; --investigating:#A9761F; --pending:#4A6670; --closed:#2F6B52;
+  --confirmed-bg:#F3DEDE; --investigating-bg:#F4E7CC; --pending-bg:#DDE5E7; --closed-bg:#D8E8DF;
+  --redact:#171C1A; --field:#FFFFFF; --field-line:#9AA69E;
+  --shadow:0 1px 0 rgba(23,28,26,.06), 0 8px 24px -18px rgba(23,28,26,.5);
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Public Sans",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --step:1.6rem;
+}
+:root:not([data-theme="light"]) { }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1211; --surface:#171C1A; --surface-2:#212927;
+    --ink:#E7EAE5; --ink-2:#C2C9C3; --muted:#8F9992; --line:#2B3431; --line-strong:#3E4A46;
+    --brass:#D4A24C; --brass-soft:#3A3122;
+    --confirmed:#E0797C; --investigating:#DCAE5C; --pending:#8FAEB8; --closed:#79C3A0;
+    --confirmed-bg:#2E1A1B; --investigating-bg:#2E2515; --pending-bg:#1A2427; --closed-bg:#13291F;
+    --redact:#E7EAE5; --field:#222B28; --field-line:#4A5854;
+    --shadow:0 1px 0 rgba(0,0,0,.4), 0 10px 26px -18px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1211; --surface:#171C1A; --surface-2:#212927;
+  --ink:#E7EAE5; --ink-2:#C2C9C3; --muted:#8F9992; --line:#2B3431; --line-strong:#3E4A46;
+  --brass:#D4A24C; --brass-soft:#3A3122;
+  --confirmed:#E0797C; --investigating:#DCAE5C; --pending:#8FAEB8; --closed:#79C3A0;
+  --confirmed-bg:#2E1A1B; --investigating-bg:#2E2515; --pending-bg:#1A2427; --closed-bg:#13291F;
+  --redact:#E7EAE5; --field:#222B28; --field-line:#4A5854;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 10px 26px -18px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:var(--sans); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased; padding-bottom:84px;
+}
+h1,h2,h3,h4{font-family:var(--serif); font-weight:500; text-wrap:balance; margin:0; letter-spacing:-.01em}
+p{margin:0}
+a{color:inherit}
+button,input,select,textarea{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px; border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important; transition-duration:.001ms !important}}
+
+.wrap{max-width:1180px; margin:0 auto; padding:0 24px}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+
+/* ---------- masthead ---------- */
+.masthead{border-bottom:1px solid var(--line); background:var(--surface); position:sticky; top:0; z-index:40}
+.masthead-in{display:flex; align-items:center; gap:16px; padding:14px 24px; max-width:1180px; margin:0 auto}
+.seal{width:40px; height:40px; flex:none}
+.brand{display:flex; flex-direction:column; gap:1px; margin-right:auto; min-width:0}
+.brand b{font-family:var(--serif); font-size:19px; font-weight:600; letter-spacing:-.015em; line-height:1.1}
+.brand span{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.icon-btn{background:none; border:1px solid var(--line); border-radius:3px; padding:7px 9px; cursor:pointer; display:flex; color:var(--ink-2)}
+.icon-btn:hover{border-color:var(--line-strong); color:var(--ink)}
+.masthead-tools{display:flex; gap:8px; align-items:center}
+
+/* ---------- drawer ---------- */
+.scrim{position:fixed; inset:0; background:rgba(10,14,13,.5); z-index:60; opacity:0; pointer-events:none; transition:opacity .18s}
+.scrim.open{opacity:1; pointer-events:auto}
+.drawer{position:fixed; top:0; left:0; bottom:0; width:288px; background:var(--surface); border-right:1px solid var(--line);
+  z-index:61; transform:translateX(-100%); transition:transform .22s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; padding:20px}
+.drawer.open{transform:none}
+.drawer h4{font-size:15px; margin-bottom:2px}
+.drawer-brand{display:flex; align-items:center; gap:11px; padding-bottom:16px; border-bottom:1px solid var(--line)}
+.drawer-brand .seal{width:34px; height:34px}
+.drawer-brand b{display:block; font-family:var(--serif); font-size:18px; font-weight:600; letter-spacing:-.015em; line-height:1.1}
+.drawer-brand span{font-family:var(--mono); font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.drawer nav{display:flex; flex-direction:column; gap:1px; margin-top:14px}
+.drawer nav button{background:none; border:0; text-align:left; padding:9px 10px; border-radius:3px; cursor:pointer; font-size:14px; color:var(--ink-2); display:block}
+.drawer nav button:hover{background:var(--surface-2); color:var(--ink)}
+.drawer nav button[aria-current="page"]{background:var(--surface-2); color:var(--ink); font-weight:600; box-shadow:inset 2px 0 0 var(--brass)}
+.drawer-foot{margin-top:auto; border-top:1px solid var(--line); padding-top:14px; font-size:12.5px; color:var(--muted)}
+
+/* ---------- layout ---------- */
+.view{display:none; padding:34px 0 40px}
+.view.active{display:block}
+.grid{display:grid; gap:20px}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-2{grid-template-columns:1.15fr .85fr}
+.cols-4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:900px){.cols-3,.cols-2,.cols-4{grid-template-columns:1fr}}
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:20px}
+.panel-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px}
+.panel-head h3{font-size:18px}
+.section-title{display:flex; align-items:center; gap:12px; margin:34px 0 16px}
+.section-title h2{font-size:23px}
+.section-title .rule{flex:1; height:1px; background:var(--line)}
+
+/* ---------- hero ---------- */
+.hero{display:grid; grid-template-columns:1.25fr .75fr; gap:40px; align-items:start; padding:38px 0 8px}
+@media (max-width:900px){.hero{grid-template-columns:1fr; gap:26px}}
+.hero h1{font-size:clamp(34px,4.6vw,50px); line-height:1.06; letter-spacing:-.025em; max-width:16ch}
+.hero .motto{font-family:var(--serif); font-style:italic; font-size:19px; color:var(--brass); margin-top:14px}
+.hero p.lede{margin-top:14px; font-size:16px; color:var(--ink-2); max-width:58ch}
+.hero-actions{display:flex; gap:10px; margin-top:22px; flex-wrap:wrap}
+.btn{border:1px solid var(--brass); background:var(--brass); color:var(--paper); padding:10px 18px; border-radius:3px; font-size:14px; font-weight:600; cursor:pointer}
+:root[data-theme="dark"] .btn:not(.ghost){color:#14110A}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.ghost){color:#14110A}}
+.btn:hover{filter:brightness(1.07)}
+.btn.ghost{background:none; color:var(--ink); border-color:var(--line-strong)}
+.btn.ghost:hover{border-color:var(--ink-2); filter:none}
+
+/* integrity meter card in hero */
+.integrity{background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:20px; box-shadow:var(--shadow)}
+.score-row{display:flex; align-items:baseline; gap:10px; margin:6px 0 2px}
+.score{font-family:var(--mono); font-size:46px; font-weight:600; letter-spacing:-.03em; line-height:1; font-variant-numeric:tabular-nums}
+.meter{height:7px; background:var(--surface-2); border-radius:99px; overflow:hidden; margin:14px 0 10px; display:flex}
+.meter i{display:block; height:100%}
+.legend{display:flex; flex-direction:column; gap:7px; font-size:12.5px; color:var(--ink-2)}
+.legend div{display:flex; align-items:center; gap:8px}
+.legend .sw{width:9px; height:9px; border-radius:2px; flex:none}
+.legend b{margin-left:auto; font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:500}
+
+/* ---------- stat tiles ---------- */
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); border-radius:4px; background:var(--surface); overflow:hidden}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{padding:18px 20px; border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+@media (max-width:760px){.stat:nth-child(2n){border-right:0} .stat:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+.stat b{display:block; font-family:var(--mono); font-size:28px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin-top:4px}
+.stat .delta{font-size:12px; color:var(--muted); margin-top:2px}
+
+/* ---------- status chips ---------- */
+.chip{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10.5px; font-weight:500;
+  letter-spacing:.08em; text-transform:uppercase; padding:3px 8px; border-radius:2px; white-space:nowrap}
+.chip::before{content:""; width:5px; height:5px; border-radius:50%; background:currentColor}
+.s-pending{color:var(--pending); background:var(--pending-bg)}
+.s-assigned{color:var(--pending); background:var(--pending-bg)}
+.s-investigating{color:var(--investigating); background:var(--investigating-bg)}
+.s-confirmed{color:var(--confirmed); background:var(--confirmed-bg)}
+.s-closed{color:var(--closed); background:var(--closed-bg)}
+
+/* ---------- case list ---------- */
+.case{display:grid; grid-template-columns:auto 1fr auto; gap:14px; padding:14px 0; border-bottom:1px solid var(--line); align-items:start}
+.case:last-child{border-bottom:0}
+.case .sev{width:3px; align-self:stretch; border-radius:2px; background:var(--line-strong)}
+.case.sev-confirmed .sev{background:var(--confirmed)}
+.case.sev-investigating .sev{background:var(--investigating)}
+.case.sev-closed .sev{background:var(--closed)}
+.case .cid{font-family:var(--mono); font-size:12px; color:var(--brass); font-weight:500}
+.case h4{font-size:16px; margin:3px 0 4px; font-family:var(--sans); font-weight:600; letter-spacing:0}
+.case .meta{font-size:12.5px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px 14px}
+.case .meta span{display:inline-flex; gap:5px}
+.case .meta em{font-style:normal; font-family:var(--mono); color:var(--ink-2)}
+.case .right{text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:6px}
+.penalty{font-size:12px; color:var(--ink-2); border-left:2px solid var(--brass); padding-left:9px; margin-top:8px; grid-column:2/-1}
+
+/* ---------- heatmap ---------- */
+.zones{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+@media (max-width:760px){.zones{grid-template-columns:repeat(2,1fr)}}
+.zone{border:1px solid var(--line); border-radius:3px; padding:0; background:var(--surface); cursor:pointer; text-align:left; overflow:hidden}
+.zone:hover{border-color:var(--line-strong)}
+.zone[aria-pressed="true"]{border-color:var(--brass); box-shadow:inset 0 0 0 1px var(--brass)}
+.zone .cells{display:grid; grid-template-columns:repeat(4,1fr); gap:2px; padding:8px}
+.zone .cells i{aspect-ratio:1; border-radius:1px; display:block}
+.zone .zfoot{padding:8px 10px 10px; border-top:1px solid var(--line)}
+.zone .zfoot b{display:block; font-size:14px; font-weight:600}
+.zone .zfoot span{font-family:var(--mono); font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
+.scalebar{display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--muted); font-family:var(--mono)}
+.scalebar i{width:16px; height:9px; border-radius:1px; display:block}
+
+/* ---------- chart ---------- */
+.chart-wrap{overflow-x:auto}
+svg.chart{display:block; min-width:520px; width:100%; height:auto}
+
+/* ---------- ledger ---------- */
+.ledger{font-family:var(--mono); font-size:11.5px; max-height:288px; overflow:auto; border:1px solid var(--line); border-radius:3px; background:var(--paper)}
+.ledger div{display:grid; grid-template-columns:auto 1fr auto; gap:12px; padding:7px 12px; border-bottom:1px solid var(--line); align-items:center}
+.ledger div:last-child{border-bottom:0}
+.ledger .t{color:var(--muted)}
+.ledger .h{color:var(--brass); letter-spacing:-.02em}
+
+/* ---------- forms ---------- */
+.field{display:flex; flex-direction:column; gap:5px; margin-bottom:14px}
+.field label{font-size:12.5px; font-weight:600; color:var(--ink-2)}
+.field .hint{font-size:12px; color:var(--muted)}
+input[type=text],input[type=tel],input[type=password],select,textarea{
+  background:var(--field); color:var(--ink); border:1px solid var(--field-line); border-radius:3px; padding:9px 11px; width:100%}
+input[type=text]:hover,input[type=tel]:hover,input[type=password]:hover,select:hover,textarea:hover{border-color:var(--ink-2)}
+input[type=text]:focus,input[type=tel]:focus,input[type=password]:focus,select:focus,textarea:focus{
+  border-color:var(--brass); outline:2px solid var(--brass); outline-offset:1px}
+input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
+select{appearance:none; -webkit-appearance:none; padding-right:30px;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 16px) 52%, calc(100% - 11px) 52%;
+  background-size:5px 5px, 5px 5px; background-repeat:no-repeat}
+textarea{min-height:110px; resize:vertical; line-height:1.5}
+.radio-set{display:flex; gap:8px; flex-wrap:wrap}
+.radio-set label{display:flex; align-items:center; gap:7px; border:1px solid var(--line-strong); border-radius:3px; padding:8px 12px; cursor:pointer; font-size:13.5px; font-weight:500}
+.radio-set label:has(input:checked){border-color:var(--brass); background:var(--brass-soft); color:var(--ink)}
+.dropzone{border:1px dashed var(--field-line); border-radius:3px; padding:16px; text-align:center; font-size:13px; color:var(--muted); background:var(--field); cursor:pointer}
+.dropzone:hover{border-color:var(--brass); color:var(--ink-2)}
+.dropzone b{color:var(--ink-2)}
+.filelist{list-style:none; padding:0; margin:10px 0 0; display:flex; flex-direction:column; gap:5px; font-family:var(--mono); font-size:11.5px; color:var(--ink-2)}
+.filelist li{display:flex; gap:8px; align-items:center}
+.fieldset{margin:26px 0 4px}
+.fs-head{display:flex; align-items:baseline; gap:10px}
+.fs-head h4{font-family:var(--sans); font-size:13px; font-weight:700; letter-spacing:.01em; white-space:nowrap}
+.fs-head .rule{flex:1; height:1px; background:var(--line)}
+.fs-note{font-size:12.5px; color:var(--muted); margin:6px 0 14px; max-width:52ch}
+.addr{font-style:normal; font-size:13.5px; line-height:1.5}
+.addr .pin{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.named{display:inline-flex; align-items:center; gap:7px}
+.named .tag{font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--investigating);
+  border:1px solid currentColor; border-radius:2px; padding:1px 6px}
+
+.notice{border-left:3px solid var(--brass); background:var(--brass-soft); padding:12px 14px; font-size:13px; border-radius:0 3px 3px 0; color:var(--ink)}
+
+/* receipt */
+.receipt{border:1px solid var(--brass); border-radius:4px; padding:22px; background:var(--surface); text-align:center}
+.receipt .cidbig{font-family:var(--mono); font-size:27px; font-weight:600; letter-spacing:.01em; margin:10px 0 4px; word-break:break-all}
+
+/* ---------- timeline ---------- */
+.timeline{list-style:none; margin:16px 0 0; padding:0 0 0 22px; border-left:1px solid var(--line); display:flex; flex-direction:column; gap:18px}
+.timeline li{position:relative}
+.timeline li::before{content:""; position:absolute; left:-27px; top:5px; width:9px; height:9px; border-radius:50%; background:var(--surface); border:2px solid var(--line-strong)}
+.timeline li.done::before{background:var(--brass); border-color:var(--brass)}
+.timeline li.now::before{background:var(--investigating); border-color:var(--investigating)}
+.timeline b{font-size:14px; display:block}
+.timeline .t{font-family:var(--mono); font-size:11px; color:var(--muted)}
+
+/* ---------- redaction ---------- */
+.redact{display:inline-block; background:var(--redact); color:transparent; border-radius:1px; padding:0 4px; user-select:none; vertical-align:baseline}
+.redact::after{content:attr(data-len)}
+.sanitized{display:grid; grid-template-columns:150px 1fr; gap:8px 16px; font-size:13.5px; align-items:baseline}
+.sanitized dt{font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.sanitized dd{margin:0}
+.firewall{display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line); border-radius:3px; padding:11px 13px; background:var(--paper); font-size:12.5px; color:var(--ink-2); margin-top:16px}
+.firewall svg{flex:none; margin-top:1px; color:var(--brass)}
+
+/* ---------- search ---------- */
+.searchbar{display:flex; gap:8px; margin-bottom:18px}
+.searchbar input{flex:1}
+
+/* ---------- report bar ---------- */
+.reportbar{position:fixed; left:0; right:0; bottom:0; z-index:50; background:var(--surface); border-top:1px solid var(--line-strong);
+  box-shadow:0 -6px 22px -20px rgba(0,0,0,.9)}
+.reportbar-in{max-width:1180px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; gap:16px}
+.reportbar p{font-size:13px; color:var(--ink-2); margin-right:auto}
+.reportbar p b{color:var(--ink)}
+@media (max-width:620px){.reportbar p{display:none}}
+.pulse{width:8px; height:8px; border-radius:50%; background:var(--confirmed); flex:none; animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ---------- entry gateway ---------- */
+.gate{display:grid; grid-template-columns:1fr 1px 1fr; gap:0; border:1px solid var(--line); border-radius:4px;
+  background:var(--surface); overflow:hidden; margin-top:24px}
+@media (max-width:900px){.gate{grid-template-columns:1fr} .gate .gate-rule{height:1px; width:auto}}
+.gate-rule{background:var(--line)}
+.lane{padding:26px 28px; display:flex; flex-direction:column}
+.lane-badge{display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:10.5px; letter-spacing:.12em;
+  text-transform:uppercase; padding:4px 9px; border-radius:2px; align-self:flex-start; border:1px solid currentColor}
+.lane-badge.open{color:var(--closed)}
+.lane-badge.restricted{color:var(--confirmed)}
+.lane h3{font-size:22px; margin:14px 0 8px}
+.lane .lane-lede{font-size:13.5px; color:var(--ink-2); max-width:44ch}
+.lane form{margin-top:20px}
+.lane .lane-foot{margin-top:auto; padding-top:18px; font-size:12px; color:var(--muted); border-top:1px solid var(--line)}
+.lane-actions{display:flex; flex-direction:column; gap:9px; margin-top:20px}
+.attempts{font-family:var(--mono); font-size:11px; color:var(--muted); text-align:center; margin-top:9px}
+.locked{color:var(--confirmed)}
+.check{display:flex; gap:9px; align-items:flex-start; font-size:12.5px; color:var(--ink-2); margin:2px 0 16px}
+.check input{margin-top:2px}
+.gate-strip{display:flex; gap:10px; align-items:center; border:1px solid var(--line); border-radius:3px;
+  padding:11px 14px; background:var(--paper); font-size:12.5px; color:var(--ink-2); margin-top:18px}
+.gate-strip svg{flex:none; color:var(--brass)}
+.signedin{display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:10.5px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--closed); background:var(--closed-bg); padding:3px 8px; border-radius:2px}
+
+/* ---------- profile ---------- */
+.profile-wrap{position:relative}
+.profile-btn{display:flex; align-items:center; gap:9px; background:none; border:1px solid var(--line); border-radius:3px;
+  padding:5px 10px 5px 6px; cursor:pointer; color:var(--ink)}
+.profile-btn:hover{border-color:var(--line-strong)}
+.profile-btn[aria-expanded="true"]{border-color:var(--brass)}
+.avatar{width:26px; height:26px; border-radius:2px; flex:none; display:grid; place-items:center;
+  background:var(--brass-soft); border:1px solid var(--brass); color:var(--brass);
+  font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.02em}
+.profile-btn .who{display:flex; flex-direction:column; align-items:flex-start; line-height:1.15}
+.profile-btn .who b{font-family:var(--mono); font-size:11.5px; font-weight:600; letter-spacing:-.01em}
+.profile-btn .who span{font-size:10px; color:var(--muted); letter-spacing:.02em}
+@media (max-width:620px){.profile-btn .who{display:none}}
+.profile-menu{position:absolute; top:calc(100% + 8px); right:0; width:274px; background:var(--surface);
+  border:1px solid var(--line-strong); border-radius:4px; box-shadow:var(--shadow); z-index:70; padding:14px; display:none}
+.profile-menu.open{display:block}
+.profile-menu .pm-head{display:flex; gap:10px; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--line)}
+.profile-menu .pm-head .avatar{width:34px; height:34px; font-size:11.5px}
+.pm-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:12px 0; border-bottom:1px solid var(--line)}
+.pm-stats div{text-align:left}
+.pm-stats b{display:block; font-family:var(--mono); font-size:19px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.1}
+.pm-stats span{font-size:10.5px; color:var(--muted); line-height:1.2; display:block; margin-top:2px}
+.pm-links{display:flex; flex-direction:column; gap:1px; padding-top:8px}
+.pm-links button{background:none; border:0; text-align:left; padding:8px 9px; border-radius:3px; cursor:pointer;
+  font-size:13px; color:var(--ink-2)}
+.pm-links button:hover{background:var(--surface-2); color:var(--ink)}
+.pm-links button.danger{color:var(--confirmed)}
+.pm-note{font-size:11.5px; color:var(--muted); margin-top:10px; border-top:1px solid var(--line); padding-top:10px}
+
+.handle-card{display:flex; gap:16px; align-items:center; border:1px solid var(--brass); border-radius:4px;
+  padding:18px 20px; background:var(--surface); flex-wrap:wrap}
+.handle-card .avatar{width:52px; height:52px; font-size:15px; border-radius:3px}
+.handle-card .hc-id{font-family:var(--mono); font-size:23px; font-weight:600; letter-spacing:-.01em}
+.empty{color:var(--muted); font-size:13.5px; padding:18px 0}
+
+.foot{border-top:1px solid var(--line); margin-top:40px; padding:22px 0 10px; font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap}
+.demo-tag{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--brass); border:1px solid var(--brass); padding:2px 7px; border-radius:2px}
+</style>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Site navigation">
+  <div class="drawer-brand">
+    <svg class="seal" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+      <circle cx="24" cy="24" r="19" fill="none" stroke="var(--brass)" stroke-width="1" opacity=".55"/>
+      <g stroke="var(--brass)" stroke-width="1.6" stroke-linecap="round" fill="none">
+        <path d="M24 12L17.5 6.15"/><path d="M13.61 18L5.29 20.7"/><path d="M13.61 30L11.79 38.56"/>
+        <path d="M24 36L30.5 41.85"/><path d="M34.39 30L42.71 27.3"/><path d="M34.39 18L36.21 9.44"/>
+      </g>
+      <path d="M24 12L34.39 18v12L24 36 13.61 30V18z" fill="var(--brass)" opacity=".14"/>
+      <path d="M24 12L34.39 18v12L24 36 13.61 30V18z" fill="none" stroke="var(--ink)" stroke-width="1.9" stroke-linejoin="round"/>
+      <circle cx="24" cy="24" r="3.6" fill="var(--brass)"/>
+    </svg>
+    <div>
+      <b>Civic<span style="color:var(--brass)">Lens</span></b>
+      <span>Civic access</span>
+    </div>
+  </div>
+  <nav id="drawerNav">
+    <button data-go="home" aria-current="page">Home</button>
+    <button data-go="me">My Dashboard</button>
+    <button data-go="report">Report Corruption</button>
+    <button data-go="track">Track Complaint</button>
+    <button data-go="map">Transparency Map</button>
+    <button data-go="news">Verified Bulletins</button>
+    <button data-go="official">Official Portal</button>
+    <button data-go="about">About &amp; Contact</button>
+  </nav>
+  <div class="drawer-foot">
+    <p>Anti-Corruption Ombudsman · Municipal Region</p>
+    <p style="margin-top:6px">Helpline 1800-11-0031 · Open 24h</p>
+  </div>
+</aside>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <button class="icon-btn" id="menuBtn" aria-label="Open navigation menu" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <svg class="seal" viewBox="0 0 48 48" aria-hidden="true">
+      <title>CivicLens</title>
+      <!-- outer barrel -->
+      <circle cx="24" cy="24" r="22" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+      <circle cx="24" cy="24" r="19" fill="none" stroke="var(--brass)" stroke-width="1" opacity=".55"/>
+      <!-- iris blades -->
+      <g stroke="var(--brass)" stroke-width="1.6" stroke-linecap="round" fill="none">
+        <path d="M24 12L17.5 6.15"/>
+        <path d="M13.61 18L5.29 20.7"/>
+        <path d="M13.61 30L11.79 38.56"/>
+        <path d="M24 36L30.5 41.85"/>
+        <path d="M34.39 30L42.71 27.3"/>
+        <path d="M34.39 18L36.21 9.44"/>
+      </g>
+      <!-- aperture -->
+      <path d="M24 12L34.39 18v12L24 36 13.61 30V18z" fill="var(--brass)" opacity=".14"/>
+      <path d="M24 12L34.39 18v12L24 36 13.61 30V18z" fill="none" stroke="var(--ink)" stroke-width="1.9" stroke-linejoin="round"/>
+      <!-- the thing the lens is pointed at -->
+      <circle cx="24" cy="24" r="3.6" fill="var(--brass)"/>
+    </svg>
+    <div class="brand">
+      <b>Civic<span style="color:var(--brass)">Lens</span></b>
+      <span>Corruption Reporting &amp; Transparency Platform</span>
+    </div>
+    <div class="masthead-tools">
+      <span class="demo-tag" title="Illustrative data">Demo data</span>
+      <button class="icon-btn" id="themeBtn" aria-label="Switch between day and night mode">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.8M8 13.2V15M15 8h-1.8M2.8 8H1M12.9 3.1l-1.3 1.3M4.4 11.6l-1.3 1.3M12.9 12.9l-1.3-1.3M4.4 4.4L3.1 3.1"/></svg>
+      </button>
+
+      <button class="btn" id="signinBtn" data-go="login" style="padding:7px 14px;font-size:13px;display:flex;align-items:center;gap:7px">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6.5 2H12a1.5 1.5 0 011.5 1.5v9A1.5 1.5 0 0112 14H6.5M9 8H2.5M5 5L2 8l3 3"/></svg>
+        Sign in
+      </button>
+
+      <div class="profile-wrap" id="profileWrap" hidden>
+        <button class="profile-btn" id="profileBtn" aria-expanded="false" aria-haspopup="true" aria-controls="profileMenu">
+          <span class="avatar" id="avatarTop">RP</span>
+          <span class="who"><b id="handleTop">RPT-000000</b><span id="roleTop">Anonymous reporter</span></span>
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6.5L8 10.5l4-4"/></svg>
+        </button>
+        <div class="profile-menu" id="profileMenu" role="menu" aria-label="Your reporter profile">
+          <div class="pm-head">
+            <span class="avatar" id="avatarMenu">RP</span>
+            <div>
+              <div style="font-family:var(--mono);font-size:13px;font-weight:600" id="handleMenu">RPT-000000</div>
+              <div style="font-size:11.5px;color:var(--muted)" id="roleMenu">Reporter handle · no name on file</div>
+            </div>
+          </div>
+          <div class="pm-stats" id="pmStats">
+            <div><b id="pmFiled">0</b><span>filed</span></div>
+            <div><b id="pmOpen">0</b><span>open</span></div>
+            <div><b id="pmActioned">0</b><span>acted on</span></div>
+          </div>
+          <div class="pm-links" id="pmCitizenLinks">
+            <button role="menuitem" data-go="me">Open my dashboard</button>
+            <button role="menuitem" data-go="report">File a new report</button>
+            <button role="menuitem" data-go="track">Track a case number</button>
+            <button role="menuitem" class="danger" id="signoutBtn">Sign out of this handle</button>
+          </div>
+          <div class="pm-links" id="pmOfficerLinks" hidden>
+            <button role="menuitem" data-go="official">Open departmental portal</button>
+            <button role="menuitem" data-go="about">Audit and disclosure rules</button>
+            <button role="menuitem" class="danger" id="signoutBtn2">Sign out</button>
+          </div>
+          <p class="pm-note" id="pmNote">Your handle is a label, not an identity. It is never sent with a report, and no case on the register can be traced back through it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ==================== HOME ==================== -->
+<section class="view active" id="v-home">
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Office of the Anti-Corruption Ombudsman</div>
+      <h1>The register stays open. The reporter stays unknown.</h1>
+      <p class="motto">Expose corruption. Protect truth.</p>
+      <p class="lede">File a bribery, procurement-fraud or misconduct report without giving your name, number or any identifier. Every report receives a permanent case number that you — and anyone else — can follow from intake to penalty.</p>
+      <div class="hero-actions">
+        <button class="btn" data-go="report">Report corruption</button>
+        <button class="btn ghost" data-go="track">Track a case number</button>
+      </div>
+    </div>
+    <div class="integrity">
+      <div class="eyebrow">Platform integrity index</div>
+      <div class="score-row"><span class="score" id="integrityScore">—</span><span style="font-size:13px;color:var(--muted)">of reports acted on</span></div>
+      <div class="meter" id="integrityMeter"></div>
+      <div class="legend" id="integrityLegend"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        Acted on = assigned to a named investigator or beyond. Recomputed at every status change.</p>
+    </div>
+  </div>
+
+  <div class="stats" style="margin-top:26px">
+    <div class="stat"><div class="eyebrow">Reports filed</div><b id="kTotal">0</b><div class="delta">since 1 April 2026</div></div>
+    <div class="stat"><div class="eyebrow">Under investigation</div><b id="kActive">0</b><div class="delta">across 8 departments</div></div>
+    <div class="stat"><div class="eyebrow">Confirmed &amp; penalised</div><b id="kConfirmed">0</b><div class="delta">penalty on public record</div></div>
+    <div class="stat"><div class="eyebrow">Median days to assign</div><b id="kDays">0</b><div class="delta">statutory limit: 14 days</div></div>
+  </div>
+
+  <div class="section-title"><h2>Latest entries in the register</h2><div class="rule"></div>
+    <span class="eyebrow" id="regCount"></span></div>
+  <div class="panel">
+    <div class="searchbar">
+      <input type="text" id="homeSearch" placeholder="Search by case number, department or ward — e.g. CRTP-2026-, Water Supply, North" aria-label="Search the register">
+      <button class="btn ghost" id="homeSearchClear">Clear</button>
+    </div>
+    <div id="homeCases"></div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:20px">
+    <div class="panel">
+      <div class="panel-head">
+        <div><div class="eyebrow">Intake volume</div><h3>Reports filed per week</h3></div>
+        <div class="scalebar"><i style="background:var(--brass)"></i>filed<i style="background:var(--confirmed)"></i>confirmed</div>
+      </div>
+      <div class="chart-wrap" id="chartWrap"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div><div class="eyebrow">Public audit trail</div><h3>Verified ledger</h3></div></div>
+      <div class="ledger" id="ledger"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">Each line is a milestone hash written when a case changes state. Entries are append-only.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== REPORT ==================== -->
+<section class="view" id="v-report">
+  <div class="grid cols-2" style="align-items:start">
+    <div class="panel">
+      <div class="eyebrow">Form ACB-1 · Corruption report</div>
+      <h2 style="font-size:26px;margin:6px 0 10px">File a report</h2>
+      <p style="color:var(--ink-2);font-size:14px;max-width:56ch">Nothing on this form is mandatory except the department, the ward and what happened. Leave every other field blank and the report is still accepted in full.</p>
+
+      <form id="reportForm" style="margin-top:22px" novalidate>
+        <div class="fieldset" style="margin-top:0">
+          <div class="fs-head"><span class="eyebrow">Part A</span><h4>What and where</h4><div class="rule"></div></div>
+        </div>
+        <div class="field">
+          <label for="rType">Nature of the misconduct</label>
+          <select id="rType">
+            <option>Bribery — payment demanded for a routine service</option>
+            <option>Extortion or threat by a public official</option>
+            <option>Procurement fraud — tender or contract rigging</option>
+            <option>Embezzlement of public funds</option>
+            <option>Nepotism or irregular appointment</option>
+            <option>Falsification of official records</option>
+            <option>Other official misconduct</option>
+          </select>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+          <div class="field">
+            <label for="rDept">Department or office</label>
+            <select id="rDept"></select>
+          </div>
+          <div class="field">
+            <label for="rWard">Ward / zone</label>
+            <select id="rWard"></select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="rAmount">Amount demanded or misappropriated <span class="hint" style="font-weight:400">— optional</span></label>
+          <input type="text" id="rAmount" placeholder="e.g. ₹4,500 in cash, or ₹12.4 lakh contract value">
+        </div>
+
+        <div class="fieldset">
+          <div class="fs-head"><span class="eyebrow">Part B</span><h4>Official complained against</h4><div class="rule"></div></div>
+          <p class="fs-note">Give whatever you know. A designation and a counter number are often enough to identify the desk; a name is not required.</p>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+            <div class="field">
+              <label for="rName">Name of the employee <span class="hint" style="font-weight:400">— if known</span></label>
+              <input type="text" id="rName" placeholder="As it appears on the name plate or receipt">
+            </div>
+            <div class="field">
+              <label for="rDesig">Designation or desk</label>
+              <input type="text" id="rDesig" placeholder="e.g. Junior Engineer, Counter 3">
+            </div>
+          </div>
+          <div class="field">
+            <label for="rEmpCode">Employee code on the identity card <span class="hint" style="font-weight:400">— if visible</span></label>
+            <input type="text" id="rEmpCode" placeholder="e.g. MCD/BPA/2017/0219">
+          </div>
+          <div class="notice" style="margin-top:4px">
+            A name you give here is published as an <b>allegation</b> and carries that label on the public register until an investigator substantiates it. Naming the wrong person delays the case — leave it blank rather than guess.
+          </div>
+        </div>
+
+        <div class="fieldset">
+          <div class="fs-head"><span class="eyebrow">Part C</span><h4>Address of the office</h4><div class="rule"></div></div>
+          <p class="fs-note">This decides which Ombudsman bench takes the file, so it is the one part worth getting exact.</p>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+            <div class="field">
+              <label for="rState">State or union territory</label>
+              <select id="rState"></select>
+            </div>
+            <div class="field">
+              <label for="rDistrict">District</label>
+              <input type="text" id="rDistrict" placeholder="e.g. Central Delhi">
+            </div>
+          </div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:0 16px">
+            <div class="field">
+              <label for="rCity">City, town or village</label>
+              <input type="text" id="rCity" placeholder="e.g. New Delhi">
+            </div>
+            <div class="field">
+              <label for="rPin">PIN code</label>
+              <input type="text" id="rPin" placeholder="6 digits" inputmode="numeric" maxlength="6">
+            </div>
+          </div>
+          <div class="field">
+            <label for="rLocal">Local address of the office</label>
+            <textarea id="rLocal" style="min-height:72px" placeholder="Building, block, floor, room or counter number, street"></textarea>
+          </div>
+        </div>
+
+        <div class="fieldset">
+          <div class="fs-head"><span class="eyebrow">Part D</span><h4>The incident</h4><div class="rule"></div></div>
+        </div>
+
+        <div class="field">
+          <label for="rDetail">What happened</label>
+          <textarea id="rDetail" placeholder="Describe the incident: what was asked for, by which desk or designation, when, and what happened when you refused. Do not include your own name here."></textarea>
+          <span class="hint">Designations help. Do not type your own identifying details — the field is scanned and they will be stripped before an officer ever sees it.</span>
+        </div>
+
+        <div class="field">
+          <label>Evidence</label>
+          <div class="dropzone" id="dropzone">
+            <b>Attach photographs, receipts, call logs or scanned documents</b><br>
+            Metadata including GPS coordinates and device identifiers is stripped on upload.
+          </div>
+          <ul class="filelist" id="fileList">
+            <li>▸ sample_receipt_stamped.jpg — 412 KB — <span style="color:var(--closed)">EXIF stripped</span></li>
+          </ul>
+        </div>
+
+        <div class="field">
+          <label>Identity handling</label>
+          <div class="radio-set">
+            <label><input type="radio" name="anon" value="anon" checked> File fully anonymously</label>
+            <label><input type="radio" name="anon" value="contact"> Allow encrypted follow-up</label>
+          </div>
+          <span class="hint" id="anonHint">No contact field is stored. Your case number is the only way back to this report — save it.</span>
+        </div>
+
+        <div class="field" id="contactField" hidden>
+          <label for="rContact">Contact number for the investigator only</label>
+          <input type="tel" id="rContact" placeholder="10-digit mobile">
+          <span class="hint">Held in a separate encrypted store. Never visible in the official portal, never printed on the case file.</span>
+        </div>
+
+        <button class="btn" type="submit" style="width:100%;padding:12px">Submit report and issue case number</button>
+        <p class="hint" style="margin-top:10px;text-align:center">Filing a knowingly false report is an offence under s.182 IPC.</p>
+      </form>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="panel" id="receiptSlot">
+        <div class="eyebrow">What you get back</div>
+        <h3 style="font-size:19px;margin:6px 0 10px">A case number, and nothing else to lose</h3>
+        <p style="font-size:13.5px;color:var(--ink-2)">On submission the report is separated from your session. No IP, no browser fingerprint and no timestamp finer than the calendar day are attached to it. The case number appears once — write it down.</p>
+        <div class="receipt" style="margin-top:16px">
+          <div class="eyebrow">Example receipt</div>
+          <div class="cidbig" style="color:var(--muted)">CRTP-2026-0000<span style="color:var(--brass)">00</span></div>
+          <p style="font-size:12.5px;color:var(--muted)">Your own number is generated on submit.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Protection in force</div>
+        <h3 style="font-size:19px;margin:6px 0 12px">Four separations</h3>
+        <ol style="margin:0;padding-left:20px;font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:9px">
+          <li><b style="color:var(--ink)">Identity from report.</b> Contact details, where given, sit in a separate store keyed by a one-way token. The case file has no field to hold them.</li>
+          <li><b style="color:var(--ink)">Report from department.</b> Officials of the accused office see the allegation and the timeline; they never see the intake record.</li>
+          <li><b style="color:var(--ink)">Investigator from office.</b> Cases route to an investigator outside the department complained against. The code is public; the name is not.</li>
+          <li><b style="color:var(--ink)">Outcome from silence.</b> Every status change is written to the public ledger within 24 hours, whether or not it favours the department.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TRACK ==================== -->
+<section class="view" id="v-track">
+  <div class="eyebrow">Case lifecycle</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">Track a complaint</h2>
+  <p style="color:var(--ink-2);max-width:62ch">Enter any case number — yours or anyone's. Tracking is open to all: journalists, watchdogs and citizens see the same record the complainant sees.</p>
+
+  <div class="searchbar" style="margin-top:20px;max-width:620px">
+    <input type="text" id="trackInput" placeholder="CRTP-2026-004417" aria-label="Case number">
+    <button class="btn" id="trackBtn">Track</button>
+  </div>
+  <p class="hint" id="trackHint" style="color:var(--muted);font-size:12.5px">Try <button class="linklike" data-sample="" style="background:none;border:0;padding:0;font:inherit;color:var(--brass);text-decoration:underline;cursor:pointer" id="sampleBtn"></button> or any number from the register.</p>
+
+  <div id="trackResult" style="margin-top:22px"></div>
+
+  <div class="panel" style="margin-top:22px">
+    <div class="eyebrow">Your saved numbers on this device</div>
+    <h3 style="font-size:18px;margin:6px 0 12px">Personal tracking list</h3>
+    <div id="savedList"></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:12px">Held only in this browser, never sent anywhere. Clearing your browser data erases it — the case itself is unaffected.</p>
+  </div>
+</section>
+
+<!-- ==================== MAP ==================== -->
+<section class="view" id="v-map">
+  <div class="eyebrow">Civic intelligence</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">Corruption density map</h2>
+  <p style="color:var(--ink-2);max-width:64ch">Each block is a municipal zone; each cell is one of its sixteen wards, shaded by verified reports per 10,000 residents. Select a zone to filter the register beneath it.</p>
+
+  <div class="panel" style="margin-top:20px">
+    <div class="panel-head">
+      <div><div class="eyebrow">Verified reports per 10,000 residents · rolling 90 days</div></div>
+      <div class="scalebar">low
+        <i style="background:var(--pending-bg)"></i><i style="background:var(--investigating-bg)"></i>
+        <i style="background:var(--investigating)"></i><i style="background:var(--confirmed)"></i>high</div>
+    </div>
+    <div class="zones" id="zones"></div>
+  </div>
+
+  <div class="grid cols-3" style="margin-top:20px">
+    <div class="panel" style="grid-column:span 2">
+      <div class="panel-head"><div><div class="eyebrow" id="zoneFilterLabel">All zones</div><h3>Reports in this area</h3></div>
+        <button class="btn ghost" id="clearZone" style="padding:6px 12px;font-size:12.5px">Show all zones</button></div>
+      <div id="zoneCases"></div>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">Hotspot departments</div>
+      <h3 style="font-size:18px;margin:6px 0 14px">Where reports concentrate</h3>
+      <div id="deptBars" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== NEWS ==================== -->
+<section class="view" id="v-news">
+  <div class="eyebrow">Public record</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">Verified cases &amp; penalties</h2>
+  <p style="color:var(--ink-2);max-width:64ch">Cases where the allegation was substantiated and enforcement followed. Published unedited, including the investigator code that signed the finding.</p>
+  <div class="panel" style="margin-top:20px" id="bulletins"></div>
+</section>
+
+<!-- ==================== OFFICIAL ==================== -->
+<section class="view" id="v-official">
+  <div id="officialLogin">
+    <div class="grid cols-2" style="align-items:start">
+      <div class="panel">
+        <div class="eyebrow">Restricted · Government personnel only</div>
+        <h2 style="font-size:26px;margin:6px 0 10px">You are not signed in</h2>
+        <p style="font-size:14px;color:var(--ink-2);max-width:54ch">This portal serves complaints lodged against your own department. Access is granted against your employee code, and every case file opened is written to an audit log the Ombudsman can read.</p>
+        <button class="btn" data-go="login" style="margin-top:20px;padding:11px 20px">Go to employee sign-in</button>
+        <div class="gate-strip" style="margin-top:22px">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.8l5.2 2.2v4.1c0 3.3-2.1 5.7-5.2 6.8-3.1-1.1-5.2-3.5-5.2-6.8V4z"/></svg>
+          <span>Citizens need nothing from this page. Reporting, tracking and every transparency page are open to the public without an account.</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">What an officer can and cannot see</div>
+        <h3 style="font-size:19px;margin:6px 0 14px">The privacy firewall</h3>
+        <dl class="sanitized">
+          <dt>Allegation</dt><dd>Full text, as filed</dd>
+          <dt>Department</dt><dd>Visible</dd>
+          <dt>Ward</dt><dd>Visible</dd>
+          <dt>Evidence</dt><dd>Visible, metadata stripped</dd>
+          <dt>Timeline</dt><dd>Visible</dd>
+          <dt style="color:var(--confirmed)">Reporter name</dt><dd><span class="redact" data-len="███████████"></span></dd>
+          <dt style="color:var(--confirmed)">Reporter contact</dt><dd><span class="redact" data-len="██████████"></span></dd>
+          <dt style="color:var(--confirmed)">Intake channel</dt><dd><span class="redact" data-len="████████"></span></dd>
+          <dt style="color:var(--confirmed)">Filing time</dt><dd><span class="redact" data-len="█████"></span> <span style="color:var(--muted);font-size:12px">day only</span></dd>
+        </dl>
+        <div class="firewall">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>
+          <span>Redacted fields are not merely hidden in this interface — they are absent from the record served to departmental accounts. There is no permission level within the department that reveals them.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="officialDash" hidden>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <div class="eyebrow" id="oWho">Signed in · MCD/REV/2019/0447 · Deputy Commissioner</div>
+        <h2 style="font-size:26px;margin:6px 0 0" id="oDept">Municipal Revenue &amp; Property Tax</h2>
+        <p style="color:var(--ink-2);font-size:14px">Complaints lodged against this office. Reporter identities are absent from this view.</p>
+      </div>
+      <button class="btn ghost" id="logoutBtn">Sign out</button>
+    </div>
+
+    <div class="stats" style="margin-top:22px">
+      <div class="stat"><div class="eyebrow">Complaints received</div><b id="oTotal">0</b><div class="delta">this financial year</div></div>
+      <div class="stat"><div class="eyebrow">Active investigations</div><b id="oActive">0</b><div class="delta">with external investigators</div></div>
+      <div class="stat"><div class="eyebrow">Resolved &amp; closed</div><b id="oClosed">0</b><div class="delta">findings published</div></div>
+      <div class="stat"><div class="eyebrow">Response due</div><b id="oDue">0</b><div class="delta">departmental reply within 7 days</div></div>
+    </div>
+
+    <div class="section-title"><h2>Case summaries</h2><div class="rule"></div></div>
+    <div class="panel" id="officialCases"></div>
+  </div>
+</section>
+
+<!-- ==================== LOGIN GATEWAY ==================== -->
+<section class="view" id="v-login">
+  <div class="eyebrow">Entry</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">Two ways in, and only one of them has a password</h2>
+  <p style="color:var(--ink-2);max-width:66ch">Citizens are never asked to register — an account is a record of who reported what, and this platform is built not to hold one. Government personnel must sign in, because every file they open is logged against their employee code.</p>
+
+  <div class="gate">
+    <!-- citizen lane -->
+    <div class="lane">
+      <span class="lane-badge open">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 014.6-1.3"/></svg>
+        Public · no account
+      </span>
+      <h3>Citizens &amp; press</h3>
+      <p class="lane-lede">Reporting and tracking never require a sign-in. A handle is optional: it exists only so your own reports gather on one dashboard. It has no name, phone or email attached, because the form has no field for any of them.</p>
+
+      <form id="citizenForm" novalidate>
+        <div class="field">
+          <label for="cHandle">Reporter handle</label>
+          <input type="text" id="cHandle" placeholder="RPT-7F3A9C" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="cPass">Four-digit passcode</label>
+          <input type="password" id="cPass" placeholder="••••" inputmode="numeric" maxlength="4" autocomplete="off">
+          <span class="hint">Chosen by you when the handle was created. It is never transmitted — the check happens in this browser.</span>
+        </div>
+        <button class="btn" type="submit" style="width:100%;padding:11px">Sign in to my dashboard</button>
+        <p id="citizenErr" style="color:var(--confirmed);font-size:13px;margin-top:10px" hidden></p>
+      </form>
+
+      <div class="lane-actions">
+        <button class="btn ghost" id="createBtn" style="padding:10px">Create a new handle</button>
+        <button class="btn ghost" data-go="report" style="padding:10px">Skip this — report anonymously</button>
+      </div>
+      <div id="createOut"></div>
+
+      <div class="notice" style="margin-top:16px">
+        <b>Demonstration handle</b> — <span style="font-family:var(--mono)">RPT-7F3A9C</span>, passcode <span style="font-family:var(--mono)">4417</span>. It carries three filed reports.
+      </div>
+
+      <div class="lane-foot">
+        <b style="color:var(--ink-2)">Forgot the passcode?</b> Nobody can reset it — there is no email on file to send a link to. Create a fresh handle and add your cases back with their case numbers.
+      </div>
+    </div>
+
+    <div class="gate-rule"></div>
+
+    <!-- government lane -->
+    <div class="lane">
+      <span class="lane-badge restricted">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="10" height="7" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>
+        Restricted · logged access
+      </span>
+      <h3>Government employees</h3>
+      <p class="lane-lede">For departmental officers, nodal officials and Ombudsman investigators reviewing complaints against their own office.</p>
+
+      <form id="govForm" novalidate>
+        <div class="field">
+          <label for="gEmp">Employee code</label>
+          <input type="text" id="gEmp" placeholder="MCD/REV/2019/0447" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="gDept">Department</label>
+          <select id="gDept"></select>
+        </div>
+        <div class="field">
+          <label for="gPass">Departmental password</label>
+          <input type="password" id="gPass" placeholder="••••••••" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="gOtp">One-time code sent to your registered device</label>
+          <input type="text" id="gOtp" placeholder="6 digits" inputmode="numeric" maxlength="6" autocomplete="off">
+          <span class="hint">Sent to the mobile number on your service record. Codes expire after 90 seconds.</span>
+        </div>
+        <label class="check"><input type="checkbox" id="gTrust"> <span>Remember this workstation for 8 hours. Do not tick this on a shared terminal — the audit log will attribute every file opened to your code.</span></label>
+        <button class="btn" type="submit" style="width:100%;padding:11px">Verify and enter</button>
+        <p id="govErr" style="color:var(--confirmed);font-size:13px;margin-top:10px" hidden></p>
+        <p class="attempts" id="govAttempts">3 attempts remaining before this code is locked for 30 minutes</p>
+      </form>
+
+      <div class="notice" style="margin-top:16px">
+        <b>Demonstration credentials</b> — code <span style="font-family:var(--mono)">MCD/REV/2019/0447</span>, department <span style="font-family:var(--mono)">Municipal Revenue &amp; Property Tax</span>, any password, one-time code <span style="font-family:var(--mono)">418290</span>.
+      </div>
+
+      <div class="lane-foot">
+        Access is granted to complaints filed against your own department only. Reporter identities are not part of the record served to departmental accounts, at any permission level.
+      </div>
+    </div>
+  </div>
+
+  <div class="gate-strip">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.3"/><path d="M8 5.2v3.4M8 10.8h.01"/></svg>
+    <span><b>Never sign in here on a request from anyone.</b> The Ombudsman does not telephone citizens to ask for case numbers, and no officer will ever ask you to log in on their behalf. This page asks citizens for nothing.</span>
+  </div>
+</section>
+
+<!-- ==================== MY DASHBOARD ==================== -->
+<section class="view" id="v-me">
+  <div class="eyebrow">Your activity on this device</div>
+  <h2 style="font-size:28px;margin:6px 0 8px">My dashboard</h2>
+  <p style="color:var(--ink-2);max-width:64ch">Everything below is assembled in this browser from the case numbers you hold. The platform has no account for you, and no record on its side connects these cases to each other or to you.</p>
+
+  <div id="meGate" class="panel" style="margin-top:20px" hidden>
+    <div class="eyebrow">Signed out</div>
+    <h3 style="font-size:20px;margin:6px 0 8px">Sign in to gather your reports here</h3>
+    <p style="font-size:13.5px;color:var(--ink-2);max-width:58ch">A handle costs nothing and reveals nothing — it takes one click to create and asks for no personal detail. Without one you can still report and track; the cases simply won't collect on a dashboard.</p>
+    <div style="display:flex;gap:9px;margin-top:18px;flex-wrap:wrap">
+      <button class="btn" data-go="login" style="padding:10px 18px">Sign in or create a handle</button>
+      <button class="btn ghost" data-go="report" style="padding:10px 18px">Report without one</button>
+    </div>
+  </div>
+
+  <div id="meBody">
+  <div class="handle-card" style="margin-top:20px">
+    <span class="avatar" id="avatarBig">RP</span>
+    <div style="margin-right:auto">
+      <div class="eyebrow">Reporter handle</div>
+      <div class="hc-id" id="handleBig">RPT-000000</div>
+      <p style="font-size:12.5px;color:var(--muted);margin-top:2px" id="handleSince">Created on this device</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" id="signoutBtn3" style="padding:8px 14px;font-size:13px">Sign out</button>
+      <button class="btn" data-go="report" style="padding:8px 16px;font-size:13px">File a new report</button>
+    </div>
+  </div>
+
+  <div class="stats" style="margin-top:20px">
+    <div class="stat"><div class="eyebrow">Reports you filed</div><b id="meFiled">0</b><div class="delta" id="meFiledSub">on the public register</div></div>
+    <div class="stat"><div class="eyebrow">Awaiting an investigator</div><b id="mePending">0</b><div class="delta" id="mePendingSub">14-day limit applies</div></div>
+    <div class="stat"><div class="eyebrow">Under investigation</div><b id="meActive">0</b><div class="delta">assigned outside the department</div></div>
+    <div class="stat"><div class="eyebrow">Confirmed with penalty</div><b id="meConfirmed">0</b><div class="delta">published on the ledger</div></div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:20px;align-items:start">
+    <div class="panel">
+      <div class="panel-head"><div><div class="eyebrow">Filed from this device</div><h3>Your reports</h3></div>
+        <span class="eyebrow" id="meCount"></span></div>
+      <div id="meCases"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="panel">
+        <div class="panel-head"><div><div class="eyebrow">Outcome of what you reported</div><h3 style="font-size:17px">Where your cases stand</h3></div></div>
+        <div class="meter" id="meMeter" style="margin-top:4px"></div>
+        <div class="legend" id="meLegend"></div>
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;border-top:1px solid var(--line);padding-top:10px" id="meBlurb"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div><div class="eyebrow">Not filed by you</div><h3 style="font-size:17px">Cases you're watching</h3></div></div>
+        <div id="meWatching"></div>
+      </div>
+
+      <div class="panel">
+        <div class="eyebrow">Filed from another device</div>
+        <h3 style="font-size:17px;margin:6px 0 10px">Add a case by number</h3>
+        <form id="restoreForm" novalidate>
+          <div class="field">
+            <label for="restoreId">Case number</label>
+            <input type="text" id="restoreId" placeholder="CRTP-2026-004417" autocomplete="off">
+            <span class="hint">The case number is the whole credential. Anyone holding it can follow the case — which is why it is the only thing worth keeping.</span>
+          </div>
+          <button class="btn ghost" type="submit" style="width:100%;padding:10px">Add to this handle</button>
+          <p id="restoreMsg" style="font-size:12.5px;margin-top:9px" hidden></p>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="eyebrow">What this dashboard is not</div>
+        <h3 style="font-size:17px;margin:6px 0 10px">A profile with nothing in it</h3>
+        <p style="font-size:13.5px;color:var(--ink-2)">There is no name, email or phone number attached to this handle, because there is no field to hold one. Signing out leaves the handle intact for next time. Erasing it clears the list from this browser; the reports themselves stay on the public register forever.</p>
+        <p style="font-size:13px;margin-top:12px"><button class="btn ghost" id="eraseBtn" style="padding:7px 13px;font-size:12.5px;border-color:var(--confirmed);color:var(--confirmed)">Erase this handle from the device</button></p>
+        <div class="firewall" style="margin-top:14px">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>
+          <span>If someone else uses this browser, they see this list. On a shared or public machine, erase the handle before you leave.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ==================== ABOUT ==================== -->
+<section class="view" id="v-about">
+  <div class="grid cols-2" style="align-items:start">
+    <div class="panel">
+      <div class="eyebrow">About the platform</div>
+      <h2 style="font-size:26px;margin:6px 0 12px">Why the register is public</h2>
+      <p style="font-size:14.5px;color:var(--ink-2);max-width:62ch">A grievance that disappears into a departmental queue teaches citizens that reporting is futile. CivicLens inverts the default: the complaint is public from the moment it is filed, and the complainant is private forever.</p>
+      <p style="font-size:14.5px;color:var(--ink-2);max-width:62ch;margin-top:12px">Publication is what creates pressure. A department cannot quietly shelve a case whose status line is visible to every journalist in the city, and an investigator who lets the statutory 14-day assignment window lapse does so on the record.</p>
+      <div class="section-title" style="margin:26px 0 12px"><h3 style="font-size:18px">Statutory basis</h3><div class="rule"></div></div>
+      <dl class="sanitized">
+        <dt>Constituted under</dt><dd>Whistle Blowers Protection Act, 2014 — s.4 read with s.11</dd>
+        <dt>Anonymity</dt><dd>Identity disclosure barred except on written order of the competent authority</dd>
+        <dt>Assignment limit</dt><dd>14 days from intake</dd>
+        <dt>Publication limit</dt><dd>24 hours from any status change</dd>
+        <dt>Retention</dt><dd>Case record permanent; intake metadata destroyed at 90 days</dd>
+      </dl>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="panel">
+        <div class="eyebrow">Contact</div>
+        <h3 style="font-size:19px;margin:6px 0 12px">Reaching the Ombudsman</h3>
+        <dl class="sanitized">
+          <dt>Helpline</dt><dd>1800-11-0031 · 24 hours, no caller ID recorded</dd>
+          <dt>Walk-in</dt><dd>Ombudsman Annexe, Block C, Civic Centre — Mon–Fri, 10:00–17:00</dd>
+          <dt>Post</dt><dd>PO Box 31, Civic Centre Post Office — no return address required</dd>
+          <dt>Press</dt><dd>press@ombudsman.gov.example</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Limits you should know</div>
+        <h3 style="font-size:19px;margin:6px 0 12px">What this platform is not</h3>
+        <p style="font-size:13.5px;color:var(--ink-2)">It is not an emergency service. If you are being threatened, call 112 first. It does not adjudicate service complaints such as delayed water connections — those belong with the municipal grievance cell. And it cannot compel prosecution: it refers substantiated findings to the prosecuting authority and publishes what happens next.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="foot wrap" style="max-width:1180px">
+  <span>CivicLens · Office of the Anti-Corruption Ombudsman · Municipal Region</span>
+  <span>Every figure on this page is illustrative demonstration data.</span>
+</div>
+</main>
+
+<div class="reportbar">
+  <div class="reportbar-in">
+    <span class="pulse" aria-hidden="true"></span>
+    <p><b>Saw something?</b> Reporting takes four fields and no name.</p>
+    <button class="btn ghost" data-go="track" style="padding:9px 14px">Track a case</button>
+    <button class="btn" data-go="report" style="padding:9px 18px">Report corruption</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- data ---------------- */
+var DEPTS = ["Municipal Revenue & Property Tax","Building Plan Approval","Public Works — Roads","Water Supply & Sewerage","Land Records & Registration","Motor Vehicles Licensing","Health & Sanitation Inspectorate","Public Distribution System"];
+var ZONES = [
+  {id:"N", name:"North Zone", wards:"Wards 1–16", rate:[3,4,2,4,3,2,4,3,2,1,3,2,2,3,1,2]},
+  {id:"C", name:"Central Zone", wards:"Wards 17–32", rate:[4,4,3,4,4,3,4,4,2,3,4,3,3,2,3,4]},
+  {id:"S", name:"South Zone", wards:"Wards 33–48", rate:[1,2,1,2,1,1,2,1,2,1,1,2,1,1,2,1]},
+  {id:"E", name:"East Zone", wards:"Wards 49–64", rate:[2,3,2,3,2,2,3,2,3,2,2,3,2,2,1,3]}
+];
+var STATES = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman & Nicobar Islands","Chandigarh","Dadra & Nagar Haveli and Daman & Diu","Delhi","Jammu & Kashmir","Ladakh","Lakshadweep","Puducherry"];
+
+/* registered address of each municipal office */
+var OFFICES = {
+  "Municipal Revenue & Property Tax":{local:"Zonal Revenue Office, Block C, 2nd Floor, Civic Centre, Minto Road", city:"New Delhi", district:"Central Delhi", state:"Delhi", pin:"110002"},
+  "Building Plan Approval":{local:"Building Sanction Branch, Room 214, Town Hall Annexe, Chandni Chowk", city:"New Delhi", district:"Central Delhi", state:"Delhi", pin:"110006"},
+  "Public Works — Roads":{local:"Executive Engineer (Roads), Works Depot, Rani Jhansi Road", city:"New Delhi", district:"Central Delhi", state:"Delhi", pin:"110055"},
+  "Water Supply & Sewerage":{local:"Consumer Services Centre, Jal Bhawan, Sector 9, Rohini", city:"New Delhi", district:"North West Delhi", state:"Delhi", pin:"110085"},
+  "Land Records & Registration":{local:"Office of the Sub-Registrar VI, Kashmere Gate Complex", city:"New Delhi", district:"North Delhi", state:"Delhi", pin:"110054"},
+  "Motor Vehicles Licensing":{local:"Regional Transport Office, Licensing Wing, Loni Road", city:"New Delhi", district:"East Delhi", state:"Delhi", pin:"110093"},
+  "Health & Sanitation Inspectorate":{local:"Ward Health Office, Municipal Dispensary Building, Karol Bagh", city:"New Delhi", district:"Central Delhi", state:"Delhi", pin:"110005"},
+  "Public Distribution System":{local:"Circle Office FSO-14, Food & Supplies Complex, Shahdara", city:"New Delhi", district:"East Delhi", state:"Delhi", pin:"110032"}
+};
+function officeOf(c){ return c.office || OFFICES[c.dept] || null; }
+function addrHtml(a){
+  if(!a) return '<span style="color:var(--muted)">not on record</span>';
+  return '<address class="addr">'+esc(a.local)+'<br>'+esc(a.city)+', '+esc(a.district)+'<br>'+
+    esc(a.state)+' — <span class="pin">'+esc(a.pin)+'</span></address>';
+}
+
+/* officials named in reports, where the complainant knew a name */
+var NAMED = {
+  "CRTP-2026-004417":{name:"R. Khandelwal", desig:"Junior Engineer, Sanction Branch", code:"MCD/BPA/2017/0219"},
+  "CRTP-2026-004392":{name:null, desig:"Assessment Inspector, Ward 22 round", code:"MCD/REV/2021/1187"},
+  "CRTP-2026-004361":{name:"S. Bhatia", desig:"Head Clerk, Receipt Section", code:"MCD/REV/2014/0663"},
+  "CRTP-2026-004295":{name:"A. Yadav", desig:"Motor Vehicle Inspector", code:"DTC/RTO/2016/0342"},
+  "CRTP-2026-004318":{name:null, desig:"Reader to the Sub-Registrar", code:null}
+};
+function namedFor(c){ return c.named || NAMED[c.id] || null; }
+function namedHtml(c){
+  var n = namedFor(c);
+  if(!n) return '<span style="color:var(--muted)">no individual identified — desk traced by the investigator</span>';
+  var who = n.name ? esc(n.name) : '<span style="color:var(--muted)">name not known to the complainant</span>';
+  return '<span class="named">'+who+' <span class="tag">alleged</span></span>'+
+    (n.desig ? '<br><span style="font-size:12.5px;color:var(--ink-2)">'+esc(n.desig)+'</span>' : '')+
+    (n.code ? '<br><span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">'+esc(n.code)+'</span>' : '');
+}
+
+var STATUS = {
+  pending:{label:"Pending intake", cls:"s-pending"},
+  assigned:{label:"Investigator assigned", cls:"s-assigned"},
+  investigating:{label:"Under investigation", cls:"s-investigating"},
+  confirmed:{label:"Confirmed", cls:"s-confirmed"},
+  closed:{label:"Closed — no finding", cls:"s-closed"}
+};
+
+var SEED = [
+  {id:"CRTP-2026-004417", zone:"C", dept:"Building Plan Approval", type:"Bribery — payment demanded for a routine service",
+   title:"₹35,000 demanded to release an occupancy certificate already cleared by the technical branch",
+   amount:"₹35,000 in cash, two instalments", date:"2026-08-24", status:"confirmed", inv:"INV-C-114",
+   penalty:"Junior Engineer suspended pending departmental inquiry; file recommended for prosecution under s.7 PC Act.",
+   detail:"Certificate had cleared structural and fire scrutiny on 11 August. The clerk at counter 3 returned it twice citing a missing annexure that is not required for residential plots, and quoted a figure to 'move the file upstairs'."},
+  {id:"CRTP-2026-004392", zone:"C", dept:"Municipal Revenue & Property Tax", type:"Extortion or threat by a public official",
+   title:"Threat of punitive reassessment unless a monthly payment continued",
+   amount:"₹8,000 per month", date:"2026-08-21", status:"investigating", inv:"INV-N-208",
+   detail:"Shopkeeper on the Central market row told that the annual valuation would be raised fourfold if collection stopped. Two adjacent shops report the same demand from the same inspector code."},
+  {id:"CRTP-2026-004388", zone:"N", dept:"Public Works — Roads", type:"Procurement fraud — tender or contract rigging",
+   title:"Resurfacing tender split into six packages to stay under the open-bid threshold",
+   amount:"₹1.42 crore aggregate", date:"2026-08-19", status:"investigating", inv:"INV-E-051",
+   detail:"Six work orders issued on the same day to three firms sharing one registered address, each just below the ₹25 lakh limit that would have required competitive bidding."},
+  {id:"CRTP-2026-004361", zone:"C", dept:"Municipal Revenue & Property Tax", type:"Falsification of official records",
+   title:"Property tax arrears written off against back-dated receipts",
+   amount:"₹6.7 lakh", date:"2026-08-14", status:"confirmed", inv:"INV-S-077",
+   penalty:"Two clerks dismissed from service; recovery ordered against the written-off amount; contractor licence of the associated agent revoked.",
+   detail:"Receipt book 114-C shows eleven entries dated before the assessment they discharge. The physical counterfoils are missing from the treasury."},
+  {id:"CRTP-2026-004340", zone:"E", dept:"Water Supply & Sewerage", type:"Bribery — payment demanded for a routine service",
+   title:"Payment sought to restore a connection disconnected in error",
+   amount:"₹4,500", date:"2026-08-11", status:"assigned", inv:"INV-C-133",
+   detail:"Disconnection notice was issued against the wrong consumer number. Restoration quoted at ₹4,500 'urgent charge' with no receipt offered."},
+  {id:"CRTP-2026-004318", zone:"N", dept:"Land Records & Registration", type:"Bribery — payment demanded for a routine service",
+   title:"Mutation entry held back for three months pending a 'processing' payment",
+   amount:"₹22,000", date:"2026-08-06", status:"investigating", inv:"INV-S-090",
+   detail:"Inheritance mutation complete in every particular. Sub-registrar's reader quoted a rate and stated that the file would otherwise 'stay in the pending tray'."},
+  {id:"CRTP-2026-004295", zone:"S", dept:"Motor Vehicles Licensing", type:"Other official misconduct",
+   title:"Driving test waived on payment through an agent stationed inside the office",
+   amount:"₹6,000 per licence", date:"2026-08-02", status:"confirmed", inv:"INV-N-186",
+   penalty:"Motor Vehicle Inspector suspended; agent barred from premises; 41 licences issued in the period under review.",
+   detail:"Agent operating from the photocopy counter openly collects for 'test clearance'. Four applicants confirm no test was conducted."},
+  {id:"CRTP-2026-004270", zone:"E", dept:"Health & Sanitation Inspectorate", type:"Extortion or threat by a public official",
+   title:"Closure notices used to extract weekly collection from food stalls",
+   amount:"₹1,500 weekly per stall", date:"2026-07-29", status:"investigating", inv:"INV-C-119",
+   detail:"Notices cite hygiene violations that are withdrawn the same day payment is made. Nine stalls on the same street describe an identical pattern."},
+  {id:"CRTP-2026-004244", zone:"N", dept:"Public Distribution System", type:"Embezzlement of public funds",
+   title:"Ration allocation diverted against inactive beneficiary cards",
+   amount:"Est. 14 tonnes monthly", date:"2026-07-25", status:"assigned", inv:"INV-E-062",
+   detail:"Stock register shows full distribution against 312 cards whose holders have not drawn rations in over a year; six are recorded deceased."},
+  {id:"CRTP-2026-004210", zone:"S", dept:"Building Plan Approval", type:"Nepotism or irregular appointment",
+   title:"Empanelment of a structural consultant related to the sanctioning officer",
+   amount:"₹38 lakh in fees over 18 months", date:"2026-07-18", status:"closed", inv:"INV-N-201",
+   detail:"Relationship confirmed but empanelment predates the officer's posting and followed the published procedure. No finding of irregularity; recusal directed for future files."},
+  {id:"CRTP-2026-004188", zone:"C", dept:"Water Supply & Sewerage", type:"Procurement fraud — tender or contract rigging",
+   title:"Pipe supply contract awarded against a specification only one vendor meets",
+   amount:"₹87 lakh", date:"2026-07-14", status:"pending", inv:null,
+   detail:"Tender specification names a proprietary jointing system. Two qualified bidders disqualified on that single ground."},
+  {id:"CRTP-2026-004155", zone:"E", dept:"Land Records & Registration", type:"Bribery — payment demanded for a routine service",
+   title:"Certified copy of a sale deed released only after payment at the record room",
+   amount:"₹3,000", date:"2026-07-09", status:"closed", inv:"INV-S-084",
+   detail:"Record room staff denied the allegation; no corroborating evidence and no other reports against the same desk. Closed with a caution to the office."}
+];
+
+var WEEKS = [
+  {w:"29 Jun", filed:14, conf:2},{w:"6 Jul", filed:19, conf:3},{w:"13 Jul", filed:17, conf:2},
+  {w:"20 Jul", filed:23, conf:4},{w:"27 Jul", filed:26, conf:3},{w:"3 Aug", filed:22, conf:5},
+  {w:"10 Aug", filed:31, conf:4},{w:"17 Aug", filed:29, conf:6},{w:"24 Aug", filed:35, conf:5},
+  {w:"31 Aug", filed:33, conf:7},{w:"7 Sep", filed:38, conf:6}
+];
+
+var LEDGER = [
+  ["12 Sep 09:14","CRTP-2026-004417 · penalty recorded","8f2ac1"],
+  ["12 Sep 08:02","CRTP-2026-004392 · evidence admitted","3bd907"],
+  ["11 Sep 17:41","CRTP-2026-004188 · intake sealed","c14e55"],
+  ["11 Sep 14:23","CRTP-2026-004340 · investigator assigned","70a2f8"],
+  ["11 Sep 11:08","CRTP-2026-004361 · finding published","e59b23"],
+  ["10 Sep 16:55","CRTP-2026-004244 · stock register impounded","2dd681"],
+  ["10 Sep 12:30","CRTP-2026-004270 · site inspection logged","91c4a0"],
+  ["09 Sep 15:12","CRTP-2026-004210 · closed, no finding","46f7bc"],
+  ["09 Sep 10:47","CRTP-2026-004295 · penalty recorded","b8320d"],
+  ["08 Sep 18:20","CRTP-2026-004318 · statement recorded","5ac9e1"]
+];
+
+/* ---------------- state ---------------- */
+var cases = SEED.slice();
+var saved = [];
+try { saved = JSON.parse(localStorage.getItem("crtp.saved") || "[]"); } catch(e) { saved = []; }
+function persist(){ try { localStorage.setItem("crtp.saved", JSON.stringify(saved)); } catch(e){} }
+
+/* handles: credential + case list per handle, all browser-local */
+var DEMO_HANDLE = "RPT-7F3A9C";
+var handles = null;
+try { handles = JSON.parse(localStorage.getItem("crtp.handles") || "null"); } catch(e){ handles = null; }
+if(!handles || !handles[DEMO_HANDLE]){
+  handles = handles || {};
+  handles[DEMO_HANDLE] = { pass:"4417", created:"6 Aug 2026", mine:["CRTP-2026-004340","CRTP-2026-004318","CRTP-2026-004361"] };
+}
+function persistHandles(){ try { localStorage.setItem("crtp.handles", JSON.stringify(handles)); } catch(e){} }
+
+/* session: null (signed out) | {kind:"citizen",handle} | {kind:"officer",code,dept,rank} */
+var session = null;
+try {
+  var raw = localStorage.getItem("crtp.session");
+  if(raw){ var s = JSON.parse(raw); if(s && s.kind==="citizen" && handles[s.handle]) session = s; }
+} catch(e){}
+function persistSession(){
+  try {
+    if(session && session.kind==="citizen") localStorage.setItem("crtp.session", JSON.stringify(session));
+    else localStorage.removeItem("crtp.session");
+  } catch(e){}
+}
+function newHandle(){
+  var s = "", chars = "ABCDEF0123456789";
+  for(var i=0;i<6;i++) s += chars.charAt(Math.floor(Math.random()*chars.length));
+  return "RPT-" + s;
+}
+function isCitizen(){ return !!(session && session.kind==="citizen"); }
+function myList(){ return isCitizen() ? (handles[session.handle].mine || []) : []; }
+
+var $ = function(s,r){ return (r||document).querySelector(s); };
+var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function fmtDate(iso){
+  var m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], d=iso.split("-");
+  return parseInt(d[2],10)+" "+m[parseInt(d[1],10)-1]+" "+d[0];
+}
+function zoneName(id){ for(var i=0;i<ZONES.length;i++) if(ZONES[i].id===id) return ZONES[i].name; return id; }
+
+/* ---------------- navigation ---------------- */
+function go(view){
+  $$(".view").forEach(function(v){ v.classList.toggle("active", v.id==="v-"+view); });
+  $$("#drawerNav button").forEach(function(t){
+    if(t.dataset.go===view) t.setAttribute("aria-current","page"); else t.removeAttribute("aria-current");
+  });
+  closeDrawer();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+document.addEventListener("click", function(e){
+  var t = e.target.closest("[data-go]");
+  if(t){ go(t.dataset.go); }
+});
+
+function openDrawer(){ $("#drawer").classList.add("open"); $("#scrim").classList.add("open"); $("#menuBtn").setAttribute("aria-expanded","true"); }
+function closeDrawer(){ $("#drawer").classList.remove("open"); $("#scrim").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded","false"); }
+$("#menuBtn").addEventListener("click", function(){ $("#drawer").classList.contains("open") ? closeDrawer() : openDrawer(); });
+$("#scrim").addEventListener("click", closeDrawer);
+document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeDrawer(); });
+
+/* ---------------- theme ---------------- */
+var stored = null;
+try { stored = localStorage.getItem("crtp.theme"); } catch(e){}
+if(stored) document.documentElement.setAttribute("data-theme", stored);
+function currentTheme(){
+  var a = document.documentElement.getAttribute("data-theme");
+  if(a) return a;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+$("#themeBtn").addEventListener("click", function(){
+  var next = currentTheme()==="dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try { localStorage.setItem("crtp.theme", next); } catch(e){}
+  drawChart();
+});
+
+/* ---------------- renderers ---------------- */
+function caseRow(c, opts){
+  opts = opts || {};
+  var st = STATUS[c.status];
+  var sev = c.status==="confirmed" ? "sev-confirmed" : (c.status==="investigating" ? "sev-investigating" : (c.status==="closed" ? "sev-closed" : ""));
+  var html = '<article class="case '+sev+'">'+
+    '<div class="sev"></div>'+
+    '<div><div class="cid">'+esc(c.id)+'</div>'+
+    '<h4>'+esc(c.title)+'</h4>'+
+    '<div class="meta">'+
+      '<span>'+esc(c.dept)+'</span>'+
+      '<span>'+esc(zoneName(c.zone))+'</span>'+
+      '<span>Filed <em>'+fmtDate(c.date)+'</em></span>'+
+      '<span>Investigator <em>'+(c.inv ? esc(c.inv) : "not yet assigned")+'</em></span>'+
+    '</div>'+
+    (opts.penalty && c.penalty ? '<p class="penalty">'+esc(c.penalty)+'</p>' : '')+
+    '</div>'+
+    '<div class="right"><span class="chip '+st.cls+'">'+st.label+'</span>'+
+      (opts.track!==false ? '<button class="btn ghost" style="padding:5px 10px;font-size:12px" data-track="'+esc(c.id)+'">Open</button>' : '')+
+    '</div></article>';
+  return html;
+}
+
+function renderHome(filter){
+  var list = cases;
+  if(filter){
+    var q = filter.toLowerCase();
+    list = cases.filter(function(c){
+      return (c.id+" "+c.dept+" "+c.title+" "+zoneName(c.zone)+" "+c.type).toLowerCase().indexOf(q) > -1;
+    });
+  }
+  $("#homeCases").innerHTML = list.length
+    ? list.slice(0,8).map(function(c){ return caseRow(c,{}); }).join("")
+    : '<p style="color:var(--muted);padding:20px 0">No entry matches that search. Case numbers take the form CRTP-2026-000000.</p>';
+  $("#regCount").textContent = list.length + " of " + cases.length + " shown";
+}
+
+function renderStats(){
+  var total = 1284 + (cases.length - SEED.length);
+  var active = cases.filter(function(c){ return c.status==="investigating" || c.status==="assigned"; }).length;
+  var conf = cases.filter(function(c){ return c.status==="confirmed"; }).length;
+  $("#kTotal").textContent = total.toLocaleString();
+  $("#kActive").textContent = 96 + active;
+  $("#kConfirmed").textContent = 38 + conf;
+  $("#kDays").textContent = "9";
+
+  var buckets = [
+    {k:"confirmed", label:"Confirmed with penalty", color:"var(--confirmed)", n:38+conf},
+    {k:"investigating", label:"Under active investigation", color:"var(--investigating)", n:96+active},
+    {k:"closed", label:"Closed after inquiry", color:"var(--closed)", n:214},
+    {k:"pending", label:"Awaiting assignment", color:"var(--line-strong)", n:Math.max(0, total-(38+conf)-(96+active)-214)}
+  ];
+  var acted = buckets[0].n + buckets[1].n + buckets[2].n;
+  $("#integrityScore").textContent = Math.round(acted/total*100) + "%";
+  $("#integrityMeter").innerHTML = buckets.map(function(b){
+    return '<i style="width:'+(b.n/total*100)+'%;background:'+b.color+'"></i>';
+  }).join("");
+  $("#integrityLegend").innerHTML = buckets.map(function(b){
+    return '<div><span class="sw" style="background:'+b.color+'"></span>'+b.label+'<b>'+b.n.toLocaleString()+'</b></div>';
+  }).join("");
+}
+
+function drawChart(){
+  var W=560, H=230, padL=34, padR=10, padT=16, padB=34;
+  var max=40, plotW=W-padL-padR, plotH=H-padT-padB;
+  var n=WEEKS.length, band=plotW/n, bw=Math.min(26, band*0.56);
+  var ticks=[0,10,20,30,40];
+  var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Weekly reports filed, rising from 14 in the week of 29 June to 38 in the week of 7 September, with confirmed cases rising from 2 to 6.">';
+  ticks.forEach(function(t){
+    var y = padT + plotH - (t/max)*plotH;
+    s += '<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="var(--line)" stroke-width="1"/>';
+    s += '<text x="'+(padL-8)+'" y="'+(y+3.5)+'" text-anchor="end" fill="var(--muted)" font-family="IBM Plex Mono, monospace" font-size="10">'+t+'</text>';
+  });
+  WEEKS.forEach(function(d,i){
+    var cx = padL + band*i + band/2;
+    var hF = (d.filed/max)*plotH, hC = (d.conf/max)*plotH;
+    s += '<rect x="'+(cx-bw/2)+'" y="'+(padT+plotH-hF)+'" width="'+bw+'" height="'+hF+'" fill="var(--brass)" opacity="0.85" rx="1"/>';
+    s += '<rect x="'+(cx-bw/2)+'" y="'+(padT+plotH-hC)+'" width="'+bw+'" height="'+hC+'" fill="var(--confirmed)" rx="1"/>';
+    if(i%2===0 || i===n-1){
+      s += '<text x="'+cx+'" y="'+(H-12)+'" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono, monospace" font-size="9.5">'+d.w+'</text>';
+    }
+  });
+  var last = WEEKS[n-1];
+  var lx = padL + band*(n-1) + band/2;
+  s += '<text x="'+lx+'" y="'+(padT+plotH-(last.filed/max)*plotH-6)+'" text-anchor="middle" fill="var(--ink)" font-family="IBM Plex Mono, monospace" font-size="10.5" font-weight="600">'+last.filed+'</text>';
+  s += '<line x1="'+padL+'" y1="'+(padT+plotH)+'" x2="'+(W-padR)+'" y2="'+(padT+plotH)+'" stroke="var(--line-strong)" stroke-width="1"/>';
+  s += '</svg>';
+  $("#chartWrap").innerHTML = s;
+}
+
+function renderLedger(){
+  $("#ledger").innerHTML = LEDGER.map(function(l){
+    return '<div><span class="t">'+esc(l[0])+'</span><span>'+esc(l[1])+'</span><span class="h">#'+esc(l[2])+'</span></div>';
+  }).join("");
+}
+
+/* ---------------- heatmap ---------------- */
+var activeZone = null;
+var CELL = ["var(--pending-bg)","var(--investigating-bg)","var(--investigating)","var(--confirmed)"];
+function renderZones(){
+  $("#zones").innerHTML = ZONES.map(function(z){
+    var sum = z.rate.reduce(function(a,b){ return a+b; },0);
+    var avg = (sum/z.rate.length).toFixed(1);
+    var band = sum>=48 ? "High" : (sum>=36 ? "Moderate" : "Low");
+    return '<button class="zone" data-zone="'+z.id+'" aria-pressed="'+(activeZone===z.id)+'">'+
+      '<div class="cells">'+z.rate.map(function(r){ return '<i style="background:'+CELL[r-1]+'"></i>'; }).join("")+'</div>'+
+      '<div class="zfoot"><b>'+z.name+'</b><span>'+band+' · '+avg+' per 10k · '+z.wards+'</span></div></button>';
+  }).join("");
+  $$(".zone").forEach(function(b){
+    b.addEventListener("click", function(){
+      activeZone = (activeZone===b.dataset.zone) ? null : b.dataset.zone;
+      renderZones(); renderZoneCases();
+    });
+  });
+}
+function renderZoneCases(){
+  var list = activeZone ? cases.filter(function(c){ return c.zone===activeZone; }) : cases;
+  $("#zoneFilterLabel").textContent = activeZone ? zoneName(activeZone) : "All zones";
+  $("#zoneCases").innerHTML = list.length
+    ? list.slice(0,7).map(function(c){ return caseRow(c,{}); }).join("")
+    : '<p style="color:var(--muted);padding:16px 0">No reports on record in this zone for the current window.</p>';
+  renderDeptBars(list);
+}
+function renderDeptBars(list){
+  var counts = {};
+  list.forEach(function(c){ counts[c.dept] = (counts[c.dept]||0)+1; });
+  var rows = Object.keys(counts).map(function(k){ return {d:k,n:counts[k]}; })
+    .sort(function(a,b){ return b.n-a.n; }).slice(0,6);
+  var max = rows.length ? rows[0].n : 1;
+  $("#deptBars").innerHTML = rows.map(function(r){
+    return '<div><div style="display:flex;justify-content:space-between;font-size:12.5px;gap:10px">'+
+      '<span>'+esc(r.d)+'</span><b style="font-family:var(--mono);font-variant-numeric:tabular-nums">'+r.n+'</b></div>'+
+      '<div style="height:5px;background:var(--surface-2);border-radius:99px;margin-top:5px"><i style="display:block;height:100%;border-radius:99px;width:'+(r.n/max*100)+'%;background:var(--brass)"></i></div></div>';
+  }).join("") || '<p style="color:var(--muted);font-size:13px">No departments in range.</p>';
+}
+
+/* ---------------- bulletins ---------------- */
+function renderBulletins(){
+  var list = cases.filter(function(c){ return c.status==="confirmed"; });
+  $("#bulletins").innerHTML = list.map(function(c){ return caseRow(c,{penalty:true}); }).join("");
+}
+
+/* ---------------- tracking ---------------- */
+function timelineFor(c){
+  var steps = [
+    {k:"Report received and sealed", t:fmtDate(c.date), state:"done", note:"Intake metadata destroyed. Case number issued."},
+    {k:"Investigator assigned", t:c.inv ? "Within 14-day limit" : "Pending — day 6 of 14", state:c.inv?"done":"now",
+     note:c.inv ? "Routed to "+c.inv+", posted outside "+c.dept+"." : "Awaiting allocation from the external investigator pool."},
+    {k:"Under investigation", t:(c.status==="investigating"||c.status==="confirmed"||c.status==="closed")?"In progress or complete":"Not started",
+     state:(c.status==="investigating")?"now":((c.status==="confirmed"||c.status==="closed")?"done":""),
+     note:"Statements recorded, records impounded where required."},
+    {k:c.status==="closed" ? "Closed — allegation not substantiated" : "Finding published",
+     t:(c.status==="confirmed"||c.status==="closed")?"On the public ledger":"Awaiting finding",
+     state:(c.status==="confirmed"||c.status==="closed")?"done":"",
+     note:c.penalty ? c.penalty : (c.status==="closed" ? "Reasons recorded and published in full." : "Published within 24 hours of the finding.")}
+  ];
+  return '<ul class="timeline">'+steps.map(function(s){
+    return '<li class="'+s.state+'"><b>'+esc(s.k)+'</b><span class="t">'+esc(s.t)+'</span>'+
+      '<p style="font-size:13px;color:var(--ink-2);margin-top:4px;max-width:60ch">'+esc(s.note)+'</p></li>';
+  }).join("")+'</ul>';
+}
+
+function track(id){
+  id = (id||"").trim().toUpperCase();
+  var c = null;
+  for(var i=0;i<cases.length;i++) if(cases[i].id===id) c = cases[i];
+  var out = $("#trackResult");
+  if(!c){
+    out.innerHTML = '<div class="panel"><h3 style="font-size:18px">No case with that number</h3>'+
+      '<p style="color:var(--ink-2);font-size:13.5px;margin-top:6px;max-width:60ch">Check the format — case numbers read CRTP-2026- followed by six digits. If you filed on this device, your number is in the tracking list below.</p></div>';
+    return;
+  }
+  if(saved.indexOf(c.id)===-1){ saved.unshift(c.id); persist(); renderSaved(); }
+  var st = STATUS[c.status];
+  out.innerHTML = '<div class="panel">'+
+    '<div class="panel-head"><div><div class="cid" style="font-family:var(--mono);font-size:13px;color:var(--brass)">'+esc(c.id)+'</div>'+
+    '<h3 style="font-size:21px;margin-top:4px;max-width:44ch">'+esc(c.title)+'</h3></div>'+
+    '<span class="chip '+st.cls+'">'+st.label+'</span></div>'+
+    '<dl class="sanitized" style="margin-top:14px">'+
+      '<dt>Department</dt><dd>'+esc(c.dept)+'</dd>'+
+      '<dt>Office address</dt><dd>'+addrHtml(officeOf(c))+'</dd>'+
+      '<dt>Official named</dt><dd>'+namedHtml(c)+'</dd>'+
+      '<dt>Zone</dt><dd>'+esc(zoneName(c.zone))+'</dd>'+
+      '<dt>Category</dt><dd>'+esc(c.type)+'</dd>'+
+      (c.amount?'<dt>Amount</dt><dd>'+esc(c.amount)+'</dd>':'')+
+      '<dt>Investigator</dt><dd>'+(c.inv?esc(c.inv)+' <span style="color:var(--muted);font-size:12px">— code public, name withheld</span>':'<span style="color:var(--muted)">not yet assigned</span>')+'</dd>'+
+      '<dt>Reporter</dt><dd><span class="redact" data-len="████████████"></span> <span style="color:var(--muted);font-size:12px">sealed permanently</span></dd>'+
+    '</dl>'+
+    (c.detail?'<p style="font-size:14px;color:var(--ink-2);margin-top:16px;max-width:66ch;border-top:1px solid var(--line);padding-top:14px">'+esc(c.detail)+'</p>':'')+
+    timelineFor(c)+
+  '</div>';
+}
+
+function renderSaved(){
+  if(!saved.length){
+    $("#savedList").innerHTML = '<p style="color:var(--muted);font-size:13.5px">Nothing saved yet. Numbers you track or file are kept here for convenience.</p>';
+    return;
+  }
+  $("#savedList").innerHTML = saved.map(function(id){
+    var c=null; for(var i=0;i<cases.length;i++) if(cases[i].id===id) c=cases[i];
+    if(!c) return "";
+    var st=STATUS[c.status];
+    return '<div class="case" style="grid-template-columns:1fr auto"><div>'+
+      '<div class="cid">'+esc(c.id)+'</div><h4 style="font-size:14.5px">'+esc(c.title)+'</h4></div>'+
+      '<div class="right"><span class="chip '+st.cls+'">'+st.label+'</span>'+
+      '<button class="btn ghost" style="padding:5px 10px;font-size:12px" data-track="'+esc(c.id)+'">Open</button></div></div>';
+  }).join("");
+}
+
+document.addEventListener("click", function(e){
+  var b = e.target.closest("[data-track]");
+  if(b){ go("track"); $("#trackInput").value = b.dataset.track; track(b.dataset.track); }
+});
+$("#trackBtn").addEventListener("click", function(){ track($("#trackInput").value); });
+$("#trackInput").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); track(this.value); } });
+$("#sampleBtn").textContent = SEED[0].id;
+$("#sampleBtn").addEventListener("click", function(){ $("#trackInput").value = SEED[0].id; track(SEED[0].id); });
+
+/* ---------------- search ---------------- */
+$("#homeSearch").addEventListener("input", function(){ renderHome(this.value); });
+$("#homeSearchClear").addEventListener("click", function(){ $("#homeSearch").value=""; renderHome(""); });
+
+/* ---------------- report form ---------------- */
+DEPTS.forEach(function(d){
+  var o=document.createElement("option"); o.textContent=d; $("#rDept").appendChild(o);
+});
+ZONES.forEach(function(z){
+  var o=document.createElement("option"); o.textContent=z.name; o.value=z.id; $("#rWard").appendChild(o);
+});
+STATES.forEach(function(s){
+  var o=document.createElement("option"); o.textContent=s; $("#rState").appendChild(o);
+});
+
+/* the registered address of the chosen office is prefilled, and stays editable */
+function prefillOffice(){
+  var a = OFFICES[$("#rDept").value];
+  if(!a) return;
+  $("#rState").value = a.state; $("#rDistrict").value = a.district;
+  $("#rCity").value = a.city; $("#rPin").value = a.pin; $("#rLocal").value = a.local;
+}
+$("#rDept").addEventListener("change", prefillOffice);
+prefillOffice();
+$$('input[name="anon"]').forEach(function(r){
+  r.addEventListener("change", function(){
+    var isContact = this.value==="contact";
+    $("#contactField").hidden = !isContact;
+    $("#anonHint").textContent = isContact
+      ? "Your number is encrypted at rest and readable only by the assigned investigator. It never appears in the official portal."
+      : "No contact field is stored. Your case number is the only way back to this report — save it.";
+  });
+});
+$("#dropzone").addEventListener("click", function(){
+  var li=document.createElement("li");
+  li.innerHTML='▸ evidence_'+(Math.floor(Math.random()*900)+100)+'.jpg — '+(Math.floor(Math.random()*700)+120)+' KB — <span style="color:var(--closed)">EXIF stripped</span>';
+  $("#fileList").appendChild(li);
+});
+
+var nextNum = 4420;
+function fieldError(el, message){
+  el.style.borderColor = "var(--confirmed)";
+  var h = el.parentNode.querySelector(".hint");
+  if(h){ h.dataset.original = h.dataset.original || h.textContent; h.textContent = message; h.style.color = "var(--confirmed)"; }
+  else {
+    var p = document.createElement("span");
+    p.className = "hint err"; p.style.color = "var(--confirmed)"; p.textContent = message;
+    el.parentNode.appendChild(p);
+  }
+  el.focus();
+}
+function clearErrors(form){
+  $$("input,select,textarea", form).forEach(function(el){ el.style.borderColor = ""; });
+  $$(".hint", form).forEach(function(h){
+    if(h.classList.contains("err")){ h.remove(); return; }
+    if(h.dataset.original){ h.textContent = h.dataset.original; }
+    h.style.color = "";
+  });
+}
+
+$("#reportForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  clearErrors(this);
+
+  var pin = $("#rPin").value.trim();
+  if(!/^[1-9][0-9]{5}$/.test(pin)){
+    fieldError($("#rPin"), "A PIN code is six digits and does not start with 0. It decides which bench takes the file.");
+    return;
+  }
+  if(!$("#rDistrict").value.trim()){
+    fieldError($("#rDistrict"), "Name the district — the file cannot be routed without it.");
+    return;
+  }
+  if(!$("#rCity").value.trim()){
+    fieldError($("#rCity"), "Name the city, town or village where the office sits.");
+    return;
+  }
+  if(!$("#rLocal").value.trim()){
+    fieldError($("#rLocal"), "Give the building, floor and counter or room number if you have it.");
+    return;
+  }
+
+  var detail = $("#rDetail").value.trim();
+  if(detail.length < 20){
+    fieldError($("#rDetail"), "Describe what happened in at least a sentence — an investigator needs something to act on.");
+    return;
+  }
+  nextNum += Math.floor(Math.random()*7)+1;
+  var id = "CRTP-2026-" + String(nextNum).padStart(6,"0");
+  var zoneId = $("#rWard").value;
+  var c = {
+    id:id, zone:zoneId, dept:$("#rDept").value, type:$("#rType").value,
+    title: detail.length>92 ? detail.slice(0,92).replace(/\s+\S*$/,"")+"…" : detail,
+    amount:$("#rAmount").value.trim(), date:"2026-09-12", status:"pending", inv:null,
+    detail: detail,
+    office: {
+      local: $("#rLocal").value.trim(), city: $("#rCity").value.trim(),
+      district: $("#rDistrict").value.trim(), state: $("#rState").value, pin: pin
+    },
+    named: ($("#rName").value.trim() || $("#rDesig").value.trim() || $("#rEmpCode").value.trim())
+      ? { name:$("#rName").value.trim() || null, desig:$("#rDesig").value.trim() || null, code:$("#rEmpCode").value.trim() || null }
+      : null
+  };
+  cases.unshift(c);
+  saved.unshift(id); persist();
+  if(isCitizen()){ handles[session.handle].mine.unshift(id); persistHandles(); }
+  this.reset();
+  $("#contactField").hidden = true;
+  clearErrors(this);
+  prefillOffice();
+  $("#receiptSlot").innerHTML =
+    '<div class="eyebrow">Report accepted</div>'+
+    '<h3 style="font-size:19px;margin:6px 0 10px">Write this number down now</h3>'+
+    '<div class="receipt"><div class="eyebrow">Permanent case number</div>'+
+    '<div class="cidbig">'+esc(id)+'</div>'+
+    '<p style="font-size:12.5px;color:var(--ink-2);max-width:40ch;margin:8px auto 0">'+
+      (isCitizen() ? 'Shown once. It has been added to handle '+esc(session.handle)+', which lives only in this browser.'
+                   : 'Shown once. You are not signed in to a handle, so nothing here is keeping it for you — copy it down.')+'</p>'+
+    '<button class="btn" style="margin-top:14px" data-track="'+esc(id)+'">Open the case file</button></div>'+
+    '<p style="font-size:13px;color:var(--ink-2);margin-top:16px">Your report enters the public register immediately as <span class="chip s-pending">Pending intake</span> and must be assigned to an investigator within 14 days.</p>';
+  renderStats(); renderHome($("#homeSearch").value); renderSaved(); renderZoneCases(); renderMe();
+  $("#receiptSlot").scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+/* ---------------- official portal ---------------- */
+DEPTS.forEach(function(d){
+  var o=document.createElement("option"); o.textContent=d; $("#gDept").appendChild(o);
+});
+
+var officer = null, attemptsLeft = 3, lockedUntil = false;
+
+function setAttempts(){
+  var el = $("#govAttempts");
+  if(lockedUntil){
+    el.className = "attempts locked";
+    el.textContent = "Code locked for 30 minutes. Contact your departmental nodal officer to reset.";
+    return;
+  }
+  el.className = "attempts";
+  el.textContent = attemptsLeft + (attemptsLeft===1 ? " attempt" : " attempts") + " remaining before this code is locked for 30 minutes";
+}
+
+$("#govForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var err = $("#govErr");
+  if(lockedUntil){
+    err.hidden = false;
+    err.textContent = "This employee code is locked. A nodal officer must reset it before you can sign in.";
+    return;
+  }
+  var emp = $("#gEmp").value.trim(), otp = $("#gOtp").value.trim(), pass = $("#gPass").value;
+  if(emp !== "MCD/REV/2019/0447" || otp !== "418290" || !pass){
+    attemptsLeft--;
+    if(attemptsLeft <= 0){ lockedUntil = true; }
+    err.hidden = false;
+    err.textContent = !pass
+      ? "Enter your departmental password. Any value works in this demonstration."
+      : (emp !== "MCD/REV/2019/0447"
+          ? "No active service record matches that employee code."
+          : "That one-time code is wrong or has expired. Codes are valid for 90 seconds.");
+    setAttempts();
+    return;
+  }
+  err.hidden = true;
+  officer = { code: emp, dept: $("#gDept").value || $("#gDept").options[$("#gDept").selectedIndex].textContent, rank: "Deputy Commissioner" };
+  session = { kind:"officer", code:officer.code, dept:officer.dept, rank:officer.rank };
+  persistSession();
+  attemptsLeft = 3; setAttempts();
+  $("#gPass").value = ""; $("#gOtp").value = "";
+  $("#officialLogin").hidden = true;
+  $("#officialDash").hidden = false;
+  renderSession();
+  renderOfficial();
+  go("official");
+});
+
+$("#logoutBtn").addEventListener("click", function(){ officer = null; signOut(); });
+
+/* citizen lane — add a case filed elsewhere to this device */
+$("#restoreForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var id = $("#restoreId").value.trim().toUpperCase();
+  var msg = $("#restoreMsg");
+  msg.hidden = false;
+  var c = byId(id);
+  if(!c){
+    msg.style.color = "var(--confirmed)";
+    msg.textContent = "No case carries that number. Check the format: CRTP-2026- followed by six digits.";
+    return;
+  }
+  if(!isCitizen()){
+    msg.style.color = "var(--confirmed)";
+    msg.textContent = "Sign in to a handle first — there is nowhere to attach the case otherwise.";
+    return;
+  }
+  var own = handles[session.handle].mine;
+  if(own.indexOf(id) === -1){ own.unshift(id); persistHandles(); }
+  if(saved.indexOf(id) === -1){ saved.unshift(id); persist(); }
+  renderMe(); renderSaved();
+  msg.style.color = "var(--closed)";
+  msg.textContent = c.id + " added. It now appears under your reports.";
+  $("#restoreId").value = "";
+});
+
+function renderOfficial(){
+  var dept = officer ? officer.dept : "Municipal Revenue & Property Tax";
+  $("#oWho").textContent = "Signed in · " + (officer ? officer.code : "MCD/REV/2019/0447") + " · " + (officer ? officer.rank : "Deputy Commissioner");
+  $("#oDept").textContent = dept;
+  var list = cases.filter(function(c){ return c.dept===dept; });
+  var open = list.filter(function(c){ return c.status==="investigating"||c.status==="assigned"; }).length;
+  $("#oTotal").textContent = list.length + 9;
+  $("#oActive").textContent = open + 2;
+  $("#oClosed").textContent = list.filter(function(c){ return c.status==="closed"||c.status==="confirmed"; }).length + 5;
+  $("#oDue").textContent = Math.max(1, open);
+  $("#officialCases").innerHTML = (list.length ? "" : '<p class="empty">No complaints are currently on record against this department in the open window.</p>') + list.map(function(c){
+    var st = STATUS[c.status];
+    return '<article class="case" style="grid-template-columns:auto 1fr">'+
+      '<div class="sev" style="background:'+(c.status==="confirmed"?"var(--confirmed)":"var(--investigating)")+'"></div>'+
+      '<div><div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline">'+
+        '<span class="cid">'+esc(c.id)+'</span><span class="chip '+st.cls+'">'+st.label+'</span></div>'+
+      '<h4>'+esc(c.title)+'</h4>'+
+      '<p style="font-size:13.5px;color:var(--ink-2);max-width:68ch;margin:6px 0 12px">'+esc(c.detail||"")+'</p>'+
+      '<dl class="sanitized" style="font-size:13px">'+
+        '<dt>Filed</dt><dd>'+fmtDate(c.date)+' <span style="color:var(--muted);font-size:12px">(calendar day only)</span></dd>'+
+        '<dt>Office cited</dt><dd>'+addrHtml(officeOf(c))+'</dd>'+
+        '<dt>Official named</dt><dd>'+namedHtml(c)+'</dd>'+
+        '<dt>Investigator</dt><dd>'+(c.inv?esc(c.inv):"awaiting assignment")+'</dd>'+
+        '<dt>Amount alleged</dt><dd>'+esc(c.amount||"not stated")+'</dd>'+
+        '<dt>Reporter name</dt><dd><span class="redact" data-len="█████████"></span></dd>'+
+        '<dt>Reporter contact</dt><dd><span class="redact" data-len="███████████"></span></dd>'+
+        '<dt>Intake channel</dt><dd><span class="redact" data-len="███████"></span></dd>'+
+      '</dl>'+
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">'+
+        '<button class="btn ghost" style="padding:6px 12px;font-size:12.5px">Submit departmental reply</button>'+
+        '<button class="btn ghost" style="padding:6px 12px;font-size:12.5px">Request records</button>'+
+      '</div></div></article>';
+  }).join("");
+}
+
+/* ---------------- profile & my dashboard ---------------- */
+function byId(id){ for(var i=0;i<cases.length;i++) if(cases[i].id===id) return cases[i]; return null; }
+function myCases(){
+  return myList().map(byId).filter(Boolean).sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+}
+
+/* masthead slot: sign-in button when signed out, profile when signed in */
+function renderSession(){
+  var inSession = !!session;
+  $("#signinBtn").hidden = inSession;
+  $("#profileWrap").hidden = !inSession;
+  $("#meGate").hidden = isCitizen();
+  $("#meBody").hidden = !isCitizen();
+  if(!inSession){ setMenu(false); return; }
+
+  if(isCitizen()){
+    var h = session.handle, rec = handles[h];
+    ["avatarTop","avatarMenu","avatarBig"].forEach(function(k){ var el=$("#"+k); if(el) el.textContent = h.slice(4,6); });
+    ["handleTop","handleMenu","handleBig"].forEach(function(k){ var el=$("#"+k); if(el) el.textContent = h; });
+    $("#roleTop").textContent = "Signed in · citizen";
+    $("#roleMenu").textContent = "Reporter handle · no name on file";
+    $("#handleSince").textContent = "Handle created " + rec.created + " · held in this browser only";
+    $("#pmStats").hidden = false;
+    $("#pmCitizenLinks").hidden = false;
+    $("#pmOfficerLinks").hidden = true;
+    $("#pmNote").textContent = "Your handle is a label, not an identity. It is never sent with a report, and no case on the register can be traced back through it.";
+  } else {
+    var code = session.code;
+    ["avatarTop","avatarMenu"].forEach(function(k){ $("#"+k).textContent = "GOV"; });
+    ["handleTop","handleMenu"].forEach(function(k){ $("#"+k).textContent = code; });
+    $("#roleTop").textContent = session.rank;
+    $("#roleMenu").textContent = session.dept;
+    $("#pmStats").hidden = true;
+    $("#pmCitizenLinks").hidden = true;
+    $("#pmOfficerLinks").hidden = false;
+    $("#pmNote").textContent = "Every case file you open is written to an audit log against this employee code. Reporter identities are absent from the records served to your account.";
+  }
+}
+
+function signOut(){
+  var wasOfficer = session && session.kind === "officer";
+  session = null; persistSession();
+  if(wasOfficer){ $("#officialDash").hidden = true; $("#officialLogin").hidden = false; }
+  renderSession(); renderMe(); setMenu(false); go("login");
+}
+
+function renderMe(){
+  var list = myCases();
+  var pending = list.filter(function(c){ return c.status==="pending"; }).length;
+  var active = list.filter(function(c){ return c.status==="investigating" || c.status==="assigned"; }).length;
+  var conf = list.filter(function(c){ return c.status==="confirmed"; }).length;
+  var closed = list.filter(function(c){ return c.status==="closed"; }).length;
+
+  $("#meFiled").textContent = list.length;
+  $("#mePending").textContent = pending;
+  $("#meActive").textContent = active;
+  $("#meConfirmed").textContent = conf;
+  $("#meFiledSub").textContent = list.length ? "earliest " + fmtDate(list[list.length-1].date) : "none yet";
+  $("#mePendingSub").textContent = pending ? "14-day limit applies" : "all assigned within the limit";
+
+  $("#pmFiled").textContent = list.length;
+  $("#pmOpen").textContent = pending + active;
+  $("#pmActioned").textContent = active + conf + closed;
+
+  $("#meCount").textContent = list.length ? list.length + " on record" : "";
+  $("#meCases").innerHTML = list.length
+    ? list.map(function(c){ return caseRow(c,{penalty:true}); }).join("")
+    : '<p class="empty">No reports filed from this device yet. Filing one takes four fields and no name.</p>';
+
+  var buckets = [
+    {label:"Confirmed with penalty", color:"var(--confirmed)", n:conf},
+    {label:"Under investigation", color:"var(--investigating)", n:active},
+    {label:"Closed after inquiry", color:"var(--closed)", n:closed},
+    {label:"Awaiting assignment", color:"var(--line-strong)", n:pending}
+  ];
+  var total = list.length || 1;
+  $("#meMeter").innerHTML = buckets.map(function(b){
+    return '<i style="width:'+(b.n/total*100)+'%;background:'+b.color+'"></i>';
+  }).join("");
+  $("#meLegend").innerHTML = buckets.map(function(b){
+    return '<div><span class="sw" style="background:'+b.color+'"></span>'+b.label+'<b>'+b.n+'</b></div>';
+  }).join("");
+  $("#meBlurb").textContent = list.length
+    ? (conf ? conf + " of your " + list.length + " reports ended in a recorded penalty. Each finding is on the public ledger, signed with the investigator's code."
+            : "Nothing you filed has reached a finding yet. Status changes are published within 24 hours of being recorded.")
+    : "Once you file, this bar tracks what happened to every report.";
+
+  var owned = myList();
+  var watching = saved.filter(function(id){ return owned.indexOf(id)===-1; }).map(byId).filter(Boolean);
+  $("#meWatching").innerHTML = watching.length
+    ? watching.slice(0,5).map(function(c){
+        var st = STATUS[c.status];
+        return '<div class="case" style="grid-template-columns:1fr auto"><div>'+
+          '<div class="cid">'+esc(c.id)+'</div><h4 style="font-size:14px">'+esc(c.title)+'</h4></div>'+
+          '<div class="right"><span class="chip '+st.cls+'">'+st.label+'</span>'+
+          '<button class="btn ghost" style="padding:5px 10px;font-size:12px" data-track="'+esc(c.id)+'">Open</button></div></div>';
+      }).join("")
+    : '<p class="empty">Cases you look up are added here so you can follow them without filing anything.</p>';
+}
+
+var pmOpenState = false;
+function setMenu(open){
+  pmOpenState = open;
+  $("#profileMenu").classList.toggle("open", open);
+  $("#profileBtn").setAttribute("aria-expanded", String(open));
+}
+$("#profileBtn").addEventListener("click", function(e){ e.stopPropagation(); setMenu(!pmOpenState); });
+document.addEventListener("click", function(e){
+  if(pmOpenState && !e.target.closest(".profile-wrap")) setMenu(false);
+});
+document.addEventListener("keydown", function(e){ if(e.key==="Escape") setMenu(false); });
+$$("#profileMenu [data-go]").forEach(function(b){ b.addEventListener("click", function(){ setMenu(false); }); });
+
+["signoutBtn","signoutBtn2","signoutBtn3"].forEach(function(id){
+  var el = $("#"+id); if(el) el.addEventListener("click", signOut);
+});
+
+$("#eraseBtn").addEventListener("click", function(){
+  if(!isCitizen()) return;
+  delete handles[session.handle];
+  persistHandles();
+  saved = []; persist(); renderSaved();
+  signOut();
+});
+
+/* citizen sign-in */
+$("#citizenForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var h = $("#cHandle").value.trim().toUpperCase(), p = $("#cPass").value.trim();
+  var err = $("#citizenErr");
+  if(!handles[h]){
+    err.hidden = false;
+    err.textContent = "No handle on this device reads " + (h || "that") + ". Handles live in the browser they were made in — create a new one if you are on a different device.";
+    return;
+  }
+  if(handles[h].pass !== p){
+    err.hidden = false;
+    err.textContent = "That passcode does not match. There is no reset link, because there is no address to send one to.";
+    return;
+  }
+  err.hidden = true;
+  $("#cPass").value = "";
+  session = { kind:"citizen", handle:h }; persistSession();
+  renderSession(); renderMe(); go("me");
+});
+
+/* create a handle */
+$("#createBtn").addEventListener("click", function(){
+  var h = newHandle();
+  while(handles[h]) h = newHandle();
+  var p = String(Math.floor(Math.random()*9000)+1000);
+  handles[h] = { pass:p, created:"12 Sep 2026", mine:[] };
+  persistHandles();
+  session = { kind:"citizen", handle:h }; persistSession();
+  $("#createOut").innerHTML =
+    '<div class="receipt" style="margin-top:16px;text-align:left">'+
+    '<div class="eyebrow">Handle created · shown once</div>'+
+    '<div class="cidbig" style="font-size:22px;margin:8px 0 2px">'+esc(h)+'</div>'+
+    '<div style="font-family:var(--mono);font-size:15px">Passcode <b>'+esc(p)+'</b></div>'+
+    '<p style="font-size:12.5px;color:var(--ink-2);margin-top:10px">Write both down. No one can recover them for you — there is no email or phone number attached to this handle, by design.</p>'+
+    '<button class="btn" style="margin-top:12px" data-go="me">Open my dashboard</button></div>';
+  renderSession(); renderMe();
+});
+
+/* ---------------- init ---------------- */
+renderStats();
+renderHome("");
+drawChart();
+renderLedger();
+renderZones();
+renderZoneCases();
+renderBulletins();
+renderSaved();
+if(!saved.length){ saved = [SEED[0].id]; persist(); renderSaved(); }
+persistHandles();
+renderSession();
+renderMe();
+setAttempts();
+})();
+</script>
