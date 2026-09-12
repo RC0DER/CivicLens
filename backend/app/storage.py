@@ -103,6 +103,39 @@ def verify_local(key: str, expires: int, signature: str) -> bool:
     return hmac.compare_digest(sign_local(key, expires), signature)
 
 
+def _describe(exc: Exception) -> str:
+    """Turn a botocore failure into something an operator can act on.
+
+    S3-compatible services do not all answer with the XML error document
+    botocore expects - Supabase returns JSON, so the parsed error code comes
+    back empty and the message says nothing at all. The HTTP status is then the
+    only signal that survives, and it is the one that matters: 404 means the
+    bucket path did not resolve, 403 means the credentials did not.
+    """
+    response = getattr(exc, "response", None) or {}
+    error = response.get("Error", {}) if isinstance(response, dict) else {}
+    metadata = response.get("ResponseMetadata", {}) if isinstance(response, dict) else {}
+    status = metadata.get("HTTPStatusCode")
+
+    parts = [type(exc).__name__]
+    if error.get("Code"):
+        parts.append(f"code={error['Code']}")
+    if error.get("Message"):
+        parts.append(f"message={error['Message']}")
+    if status:
+        parts.append(f"http={status}")
+        hint = {
+            403: "credentials rejected - check the S3 access key and secret",
+            404: "path not found - check the bucket exists with exactly this name",
+            400: "request rejected - check the endpoint and addressing style",
+        }.get(int(status))
+        if hint:
+            parts.append(hint)
+    if len(parts) == 1:
+        parts.append(str(exc) or "no detail returned by the service")
+    return "; ".join(parts)
+
+
 class S3Storage(Storage):
     """S3-compatible object storage.
 
