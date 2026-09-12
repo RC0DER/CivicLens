@@ -74,7 +74,7 @@ psql "$CASE_DB_URL"   -c "\dt" | grep -c intake_contacts   # must be 0
 | `JWT_SECRET` | Yes | All sessions end; officials sign in again. |
 | `METRICS_TOKEN` | Yes | Update the scraper. |
 | Database passwords | Yes | Standard. |
-| `INTAKE_ENC_KEY` | With a migration | Decrypt-and-reseal every row, on the investigator host. |
+| `INTAKE_OPEN_KEY` / `INTAKE_SEAL_KEY` | With a migration | Open-and-reseal every row, on the investigator host. |
 | `INTAKE_HMAC_KEY` | **No** | Rotating it orphans every existing contact row - the token cannot be recomputed. Requires a planned re-tokenisation with both keys held simultaneously. |
 
 ## Onboarding an official

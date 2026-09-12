@@ -83,7 +83,7 @@ def test_dept_service_runs_without_intake_keys(monkeypatch):
     from app.config import Settings
 
     dept_settings = Settings(profile="dept", intake_db_url=None,
-                             intake_hmac_key=None, intake_enc_key=None)
+                             intake_hmac_key=None, intake_seal_key=None, intake_open_key=None)
     monkeypatch.setattr(security, "get_settings", lambda: dept_settings)
 
     assert dept_settings.holds_intake_keys is False
@@ -98,7 +98,7 @@ def test_intake_token_is_one_way():
     from app import security
     from app.config import Settings
 
-    s = Settings(intake_hmac_key="unit-test-key", intake_enc_key=security.generate_fernet_key())
+    s = Settings(intake_hmac_key="unit-test-key", intake_seal_key=security.generate_intake_keypair()[0])
     original = security.get_settings
     security.get_settings = lambda: s  # type: ignore[assignment]
     try:

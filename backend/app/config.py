@@ -60,8 +60,14 @@ class Settings(BaseSettings):
     db_statement_timeout_ms: int = 15_000
 
     # ---------------------------------------------------------------- intake keys
+    # The bridge from a case number to its contact row.
     intake_hmac_key: str | None = None
-    intake_enc_key: str | None = None  # urlsafe base64 32-byte Fernet key
+
+    # Sealing is asymmetric, so the service that collects contacts cannot read
+    # them: the public service gets the seal (public) half, the investigator
+    # service gets the open (private) half.
+    intake_seal_key: str | None = None
+    intake_open_key: str | None = None
 
     # ---------------------------------------------------------------- auth
     jwt_secret: str = "dev-only-change-me"  # noqa: S105 - a placeholder production refuses
@@ -158,8 +164,20 @@ class Settings(BaseSettings):
         return value
 
     @property
+    def can_seal_contacts(self) -> bool:
+        """Able to accept a follow-up contact and seal it away."""
+        return bool(self.intake_db_url and self.intake_hmac_key and self.intake_seal_key)
+
+    @property
+    def can_open_contacts(self) -> bool:
+        """Able to read a sealed contact back. True only for investigators."""
+        return bool(self.intake_db_url and self.intake_hmac_key and self.intake_open_key)
+
+    @property
     def holds_intake_keys(self) -> bool:
-        return bool(self.intake_db_url and self.intake_hmac_key and self.intake_enc_key)
+        """Kept as the name operators look for in /health/ready, and meaning
+        the sensitive capability: can this service read a reporter's contact?"""
+        return self.can_open_contacts
 
     @property
     def is_production(self) -> bool:
@@ -208,26 +226,28 @@ class Settings(BaseSettings):
                 "which defeats the separation. Deploy three services."
             )
 
-        # The guarantee, asserted at boot: a departmental service that was
-        # handed intake credentials by mistake refuses to serve.
-        if self.profile in ("public", "dept") and self.intake_enc_key:
+        # The guarantee, asserted at boot: only investigators may hold the key
+        # that opens a sealed contact.
+        if self.profile in ("public", "dept") and self.intake_open_key:
             raise ConfigurationError(
-                f"PROFILE={self.profile} was given INTAKE_ENC_KEY. Only the investigator service may hold "
-                "the decryption key. Remove it from this service's environment."
+                f"PROFILE={self.profile} was given INTAKE_OPEN_KEY, which decrypts reporter contacts. "
+                "Only the investigator service may hold it. This service needs INTAKE_SEAL_KEY "
+                "(the public half) to seal contacts, and nothing more."
             )
         if self.profile == "dept" and (self.intake_db_url or self.intake_hmac_key):
             raise ConfigurationError(
                 "PROFILE=dept was given intake credentials. The departmental service must not be able to "
                 "reach the intake store. Remove INTAKE_DB_URL and INTAKE_HMAC_KEY."
             )
-        if self.profile == "investigator" and not self.holds_intake_keys:
+        if self.profile == "investigator" and not self.can_open_contacts:
             raise ConfigurationError(
-                "PROFILE=investigator needs INTAKE_DB_URL, INTAKE_HMAC_KEY and INTAKE_ENC_KEY."
+                "PROFILE=investigator needs INTAKE_DB_URL, INTAKE_HMAC_KEY and INTAKE_OPEN_KEY."
             )
-        if self.profile == "public" and not (self.intake_db_url and self.intake_hmac_key):
+        if self.profile == "public" and not self.can_seal_contacts:
             raise ConfigurationError(
-                "PROFILE=public needs INTAKE_DB_URL and INTAKE_HMAC_KEY to seal follow-up contacts. "
-                "Give it a write-only database role - it must not be able to read the table back."
+                "PROFILE=public needs INTAKE_DB_URL, INTAKE_HMAC_KEY and INTAKE_SEAL_KEY to seal "
+                "follow-up contacts. Give it a write-only database role where the platform allows "
+                "one - it has no reason to read the table back, and no key that could."
             )
 
         if self.storage_backend == "local":

@@ -47,7 +47,7 @@ evidence directory. Check `git status` before your first push and confirm no
 ```bash
 python -c "import secrets; print('JWT_SECRET      ', secrets.token_urlsafe(48))"
 python -c "import secrets; print('INTAKE_HMAC_KEY ', secrets.token_urlsafe(48))"
-python -c "from cryptography.fernet import Fernet; print('INTAKE_ENC_KEY  ', Fernet.generate_key().decode())"
+python -c "from app.security import generate_intake_keypair; seal, open_ = generate_intake_keypair(); print('INTAKE_SEAL_KEY', seal); print('INTAKE_OPEN_KEY', open_)"
 ```
 
 Save all three in a password manager now. **`INTAKE_HMAC_KEY` cannot be rotated
@@ -70,7 +70,7 @@ contact, and changing it orphans every existing one.
    INTAKE_DATABASE_URL=${{Postgres.DATABASE_URL}}
    JWT_SECRET=<paste>
    INTAKE_HMAC_KEY=<paste>
-   INTAKE_ENC_KEY=<paste>
+   INTAKE_SEAL_KEY=<seal key>
    SERVE_FRONTEND=true
    DEMO_MODE=true
    SEED_ON_START=true

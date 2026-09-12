@@ -15,7 +15,8 @@ PROD = {
     "env": "production",
     "intake_db_url": None,
     "intake_hmac_key": None,
-    "intake_enc_key": None,
+    "intake_seal_key": None,
+    "intake_open_key": None,
     "jwt_secret": "x" * 48,
     "case_db_url": "postgresql+psycopg://u@case-db/cases",
     "storage_backend": "s3",
@@ -40,17 +41,17 @@ def test_dept_service_given_intake_credentials_refuses_to_start():
                   intake_hmac_key="k")
 
 
-def test_public_service_may_not_hold_the_decryption_key():
+def test_public_service_may_not_hold_the_opening_key():
     """Public seals contacts; only the investigator service opens them."""
     with pytest.raises(ConfigurationError, match="Only the investigator service"):
         _settings(profile="public", intake_db_url="postgresql+psycopg://u@intake-db/intake",
-                  intake_hmac_key="k", intake_enc_key="enc")
+                  intake_hmac_key="k", intake_seal_key="seal", intake_open_key="open")
 
 
 def test_single_process_deployment_is_refused_in_production():
     with pytest.raises(ConfigurationError, match="defeats the separation"):
         _settings(profile="all", intake_db_url="postgresql+psycopg://u@intake-db/intake",
-                  intake_hmac_key="k", intake_enc_key="e")
+                  intake_hmac_key="k", intake_seal_key="s", intake_open_key="o")
 
 
 def test_development_secret_is_refused_in_production():
@@ -89,14 +90,67 @@ def test_publishing_unproven_names_requires_a_deliberate_code_change():
 
 def test_a_correct_dept_deployment_starts():
     s = _settings(profile="dept")
-    assert s.holds_intake_keys is False
+    assert s.can_open_contacts is False
+    assert s.can_seal_contacts is False
     assert s.is_production is True
 
 
 def test_a_correct_investigator_deployment_starts():
     s = _settings(profile="investigator", intake_db_url="postgresql+psycopg://u@intake-db/intake",
-                  intake_hmac_key="k", intake_enc_key="e")
-    assert s.holds_intake_keys is True
+                  intake_hmac_key="k", intake_seal_key="s", intake_open_key="o")
+    assert s.can_open_contacts is True
+
+
+def test_a_correct_public_deployment_seals_but_cannot_open():
+    """The collecting service holds only the public half."""
+    s = _settings(profile="public", intake_db_url="postgresql+psycopg://u@intake-db/intake",
+                  intake_hmac_key="k", intake_seal_key="s")
+    assert s.can_seal_contacts is True
+    assert s.can_open_contacts is False
+    assert s.holds_intake_keys is False
+
+
+def test_sealing_is_one_way_for_the_service_that_collects():
+    """The heart of it: the internet-facing service cannot read back what it
+    collected, even holding its own configuration and the ciphertext."""
+    from app import security
+
+    seal_key, open_key = security.generate_intake_keypair()
+    original = security.get_settings
+
+    public = Settings(_env_file=None, intake_seal_key=seal_key, intake_open_key=None)
+    security.get_settings = lambda: public  # type: ignore[assignment]
+    try:
+        sealed = security.seal_contact("9810012345")
+        assert b"9810012345" not in sealed
+        with pytest.raises(security.IntakeKeysUnavailable):
+            security.open_contact(sealed)
+
+        investigator = Settings(_env_file=None, intake_seal_key=seal_key, intake_open_key=open_key)
+        security.get_settings = lambda: investigator  # type: ignore[assignment]
+        assert security.open_contact(sealed) == "9810012345"
+
+        # A different recipient key cannot open it either.
+        _, other_open = security.generate_intake_keypair()
+        wrong = Settings(_env_file=None, intake_seal_key=seal_key, intake_open_key=other_open)
+        security.get_settings = lambda: wrong  # type: ignore[assignment]
+        assert security.open_contact(sealed) is None
+    finally:
+        security.get_settings = original  # type: ignore[assignment]
+
+
+def test_each_sealing_is_unique():
+    """Fresh ephemeral key per message: identical contacts do not produce
+    identical ciphertext, so the store cannot be scanned for repeats."""
+    from app import security
+
+    seal_key, _ = security.generate_intake_keypair()
+    original = security.get_settings
+    security.get_settings = lambda: Settings(_env_file=None, intake_seal_key=seal_key)  # type: ignore[assignment]
+    try:
+        assert security.seal_contact("9810012345") != security.seal_contact("9810012345")
+    finally:
+        security.get_settings = original  # type: ignore[assignment]
 
 
 # --------------------------------------------------------------------------- logs

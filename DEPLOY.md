@@ -45,7 +45,7 @@ cp backend/.env.example .env        # fill in the production block
 
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # JWT_SECRET
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"   # INTAKE_HMAC_KEY
-python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # INTAKE_ENC_KEY
+python3 -c "from app.security import generate_intake_keypair; seal, open_ = generate_intake_keypair(); print('INTAKE_SEAL_KEY', seal); print('INTAKE_OPEN_KEY', open_)"
 
 docker compose up -d --build
 docker compose exec public alembic upgrade head

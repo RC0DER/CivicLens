@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import secrets
@@ -11,7 +12,11 @@ import jwt
 import pyotp
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from .config import get_settings
 
@@ -122,25 +127,89 @@ def intake_token(case_no: str) -> str:
     return hmac.new(s.intake_hmac_key.encode(), case_no.encode(), hashlib.sha256).hexdigest()
 
 
+# --------------------------------------------------------------------------- sealing
+# Contacts are sealed with a public key and opened with a private one, so the
+# service that collects them cannot read them back.
+#
+# A symmetric scheme cannot express that: one key both seals and opens, so the
+# public service - the internet-facing one, and the likeliest to be
+# compromised - would be able to decrypt every contact it has ever taken. Here
+# it holds only the sealing half. Reading a contact is mathematically out of
+# reach for it, not merely forbidden by a check it could be tricked past.
+#
+# This is a sealed box (libsodium's crypto_box_seal): an ephemeral X25519
+# keypair per message, ECDH against the recipient's public key, HKDF to an
+# AES-256-GCM key. The ephemeral private key is discarded immediately, so even
+# the sealing process cannot reverse its own work.
+_SEAL_VERSION = b"CL1"
+_INFO = b"civiclens-intake-contact"
+
+
+def _b64d(value: str) -> bytes:
+    return base64.urlsafe_b64decode(value.encode())
+
+
+def _b64e(raw: bytes) -> str:
+    return base64.urlsafe_b64encode(raw).decode()
+
+
+def _derive(shared: bytes, ephemeral_public: bytes, recipient_public: bytes) -> bytes:
+    return HKDF(
+        algorithm=hashes.SHA256(), length=32, salt=None,
+        info=_INFO + ephemeral_public + recipient_public,
+    ).derive(shared)
+
+
 def seal_contact(plaintext: str) -> bytes:
+    """Seal a contact to the investigator's public key."""
     s = get_settings()
-    if not s.intake_enc_key:
-        raise IntakeKeysUnavailable("no intake encryption key in this process")
-    return Fernet(s.intake_enc_key.encode()).encrypt(plaintext.encode())
+    if not s.intake_seal_key:
+        raise IntakeKeysUnavailable("no intake sealing key in this process")
+
+    recipient_raw = _b64d(s.intake_seal_key)
+    recipient = X25519PublicKey.from_public_bytes(recipient_raw)
+
+    ephemeral = X25519PrivateKey.generate()
+    ephemeral_public = ephemeral.public_key().public_bytes_raw()
+    key = _derive(ephemeral.exchange(recipient), ephemeral_public, recipient_raw)
+
+    nonce = secrets.token_bytes(12)
+    ciphertext = AESGCM(key).encrypt(nonce, plaintext.encode(), _SEAL_VERSION)
+    return _SEAL_VERSION + ephemeral_public + nonce + ciphertext
 
 
-def open_contact(ciphertext: bytes) -> str | None:
+def open_contact(sealed: bytes) -> str | None:
+    """Open a sealed contact. Requires the private half, which only the
+    investigator service is given."""
     s = get_settings()
-    if not s.intake_enc_key:
-        raise IntakeKeysUnavailable("no intake encryption key in this process")
+    if not s.intake_open_key:
+        raise IntakeKeysUnavailable("no intake opening key in this process")
+
+    if not sealed.startswith(_SEAL_VERSION):
+        return None
+    body = sealed[len(_SEAL_VERSION):]
+    ephemeral_public, nonce, ciphertext = body[:32], body[32:44], body[44:]
+
+    private = X25519PrivateKey.from_private_bytes(_b64d(s.intake_open_key))
+    recipient_public = private.public_key().public_bytes_raw()
+    key = _derive(
+        private.exchange(X25519PublicKey.from_public_bytes(ephemeral_public)),
+        ephemeral_public, recipient_public,
+    )
     try:
-        return Fernet(s.intake_enc_key.encode()).decrypt(ciphertext).decode()
-    except InvalidToken:
+        return AESGCM(key).decrypt(nonce, ciphertext, _SEAL_VERSION).decode()
+    except InvalidTag:
         return None
 
 
-def generate_fernet_key() -> str:
-    return Fernet.generate_key().decode()
+def generate_intake_keypair() -> tuple[str, str]:
+    """Returns (seal_key, open_key) - the public and private halves.
+
+    The seal key goes to the public service; the open key goes only to the
+    investigator service.
+    """
+    private = X25519PrivateKey.generate()
+    return _b64e(private.public_key().public_bytes_raw()), _b64e(private.private_bytes_raw())
 
 
 def sha256_bytes(data: bytes) -> str:

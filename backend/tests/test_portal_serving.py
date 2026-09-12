@@ -113,7 +113,7 @@ def test_demo_mode_is_refused_in_production():
             jwt_secret="x" * 48, case_db_url="postgresql+psycopg://u@db/cases",
             storage_backend="s3", s3_bucket="b", cors_origins="https://x.example",
             trusted_hosts="x.example", metrics_token="t",
-            intake_db_url=None, intake_hmac_key=None, intake_enc_key=None,
+            intake_db_url=None, intake_hmac_key=None, intake_seal_key=None, intake_open_key=None,
         )
 
 

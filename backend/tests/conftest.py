@@ -12,9 +12,10 @@ import os
 import shutil
 import tempfile
 
-from cryptography.fernet import Fernet
+from app.security import generate_intake_keypair
 
 _TMP = tempfile.mkdtemp(prefix="civiclens-tests-")
+_SEAL_KEY, _OPEN_KEY = generate_intake_keypair()
 
 # Environment variables win over the .env file in pydantic-settings, so this
 # fully overrides local configuration.
@@ -24,7 +25,8 @@ os.environ.update(
     CASE_DB_URL=f"sqlite:///{_TMP}/case.db",
     INTAKE_DB_URL=f"sqlite:///{_TMP}/intake.db",
     INTAKE_HMAC_KEY="test-hmac-key",
-    INTAKE_ENC_KEY=Fernet.generate_key().decode(),
+    INTAKE_SEAL_KEY=_SEAL_KEY,
+    INTAKE_OPEN_KEY=_OPEN_KEY,
     JWT_SECRET="test-secret-not-used-outside-the-suite",
     EVIDENCE_DIR=f"{_TMP}/evidence",
     STORAGE_BACKEND="local",

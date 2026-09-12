@@ -7,6 +7,12 @@ generated them — copy them into a password manager now, before you start.
 `INTAKE_HMAC_KEY` can never be rotated: it is the one-way bridge between a case
 number and its sealed contact, and changing it orphans every existing one.
 
+There are two sealing keys, and which service gets which is the point:
+**`INTAKE_SEAL_KEY`** (public half) lets a service seal a contact away, and
+**`INTAKE_OPEN_KEY`** (private half) reads one back. The public service gets
+only the seal key, so the internet-facing service cannot decrypt the contacts
+it collects — not as a matter of policy, but of arithmetic.
+
 ---
 
 ## 1 · Push to GitHub
@@ -78,7 +84,7 @@ DATABASE_URL=${{Postgres.DATABASE_URL}}
 INTAKE_DATABASE_URL=${{IntakePostgres.DATABASE_URL}}
 JWT_SECRET=<JWT_SECRET>
 INTAKE_HMAC_KEY=<INTAKE_HMAC_KEY>
-INTAKE_ENC_KEY=<INTAKE_ENC_KEY>
+INTAKE_SEAL_KEY=<INTAKE_SEAL_KEY>
 SERVE_FRONTEND=true
 DEMO_MODE=false
 STORAGE_BACKEND=s3
@@ -113,7 +119,7 @@ METRICS_TOKEN=<METRICS_TOKEN>
 ```
 
 **Note what is missing: no `INTAKE_DATABASE_URL`, no `INTAKE_HMAC_KEY`, no
-`INTAKE_ENC_KEY`.** That absence *is* the privacy firewall. If you paste one in
+`INTAKE_SEAL_KEY`, no `INTAKE_OPEN_KEY`.** That absence *is* the privacy firewall. If you paste one in
 by accident the service refuses to boot and tells you why — it fails loudly
 rather than quietly exposing reporters.
 
@@ -127,7 +133,8 @@ DATABASE_URL=${{Postgres.DATABASE_URL}}
 INTAKE_DATABASE_URL=${{IntakePostgres.DATABASE_URL}}
 JWT_SECRET=<JWT_SECRET>
 INTAKE_HMAC_KEY=<INTAKE_HMAC_KEY>
-INTAKE_ENC_KEY=<INTAKE_ENC_KEY>
+INTAKE_SEAL_KEY=<INTAKE_SEAL_KEY>
+INTAKE_OPEN_KEY=<INTAKE_OPEN_KEY>
 SERVE_FRONTEND=true
 STORAGE_BACKEND=s3
 S3_BUCKET=civiclens-evidence

@@ -20,7 +20,8 @@ echo "→ installing dependencies"
 
 if [ ! -f .env ]; then
   echo "→ writing .env with freshly generated keys"
-  ENC=$("$BIN/python" -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+  KEYS=$("$BIN/python" -c "from app.security import generate_intake_keypair; print('%s %s' % generate_intake_keypair())")
+  SEAL=${KEYS%% *}; OPEN=${KEYS##* }
   HMAC=$("$BIN/python" -c "import secrets; print(secrets.token_urlsafe(48))")
   JWT=$("$BIN/python" -c "import secrets; print(secrets.token_urlsafe(48))")
   cat > .env <<ENVFILE
@@ -29,7 +30,8 @@ PROFILE=all
 CASE_DB_URL=sqlite:///./data/case.db
 INTAKE_DB_URL=sqlite:///./data/intake.db
 INTAKE_HMAC_KEY=$HMAC
-INTAKE_ENC_KEY=$ENC
+INTAKE_SEAL_KEY=$SEAL
+INTAKE_OPEN_KEY=$OPEN
 JWT_SECRET=$JWT
 STORAGE_BACKEND=local
 EVIDENCE_DIR=./data/evidence

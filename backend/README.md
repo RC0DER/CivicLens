@@ -16,7 +16,7 @@ hides it — because the process serving them has no route to the data:
 |---|---|
 | Two databases | `case_db` holds the register. `intake_db` holds contacts. No foreign key, no shared column, no join is possible. |
 | One-way bridge | The intake row's primary key is `HMAC-SHA256(key, case_no)`. Without the key you cannot compute which row belongs to which case. Holding the intake dump alone reveals no case numbers. |
-| Encryption at rest | The contact itself is Fernet-sealed under a second key. |
+| Public-key sealing | Contacts are sealed to the investigator's public key. The service that collects them holds only the sealing half and cannot read them back. |
 | Deployment profile | `PROFILE=dept` starts **without** the intake URL and without either key. In production, a dept service that is handed them **refuses to boot**. |
 | Response projections | `DeptCase` is a separate Pydantic model with `extra="forbid"` and no reporter field. A new column on `Case` does not appear in it. |
 | Dates, not timestamps | `filed_on` is a `DATE` in the civic timezone. Filing time to the second identifies a person against counter CCTV; the calendar day is enough for the statutory clock. |
@@ -33,7 +33,7 @@ much as *references* an intake symbol.
 python -m venv .venv && . .venv/Scripts/activate   # Linux/macOS: source .venv/bin/activate
 pip install -r requirements-dev.txt
 cp .env.example .env
-python -c "from app.security import generate_fernet_key; print(generate_fernet_key())"   # paste into INTAKE_ENC_KEY
+python -c "from app.security import generate_intake_keypair; seal, open_ = generate_intake_keypair(); print('INTAKE_SEAL_KEY', seal); print('INTAKE_OPEN_KEY', open_)"   # paste both into .env
 alembic upgrade head
 alembic --name intake upgrade head
 python -m scripts.seed

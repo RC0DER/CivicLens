@@ -20,7 +20,8 @@ Write-Host "-> installing dependencies"
 
 if (-not (Test-Path ".env")) {
   Write-Host "-> writing .env with freshly generated keys"
-  $enc  = & $py -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  $keys = (& $py -c "from app.security import generate_intake_keypair; print('{0} {1}'.format(*generate_intake_keypair()))") -split  
+  $seal = $keys[0]; $open = $keys[1]
   $hmac = & $py -c "import secrets; print(secrets.token_urlsafe(48))"
   $jwt  = & $py -c "import secrets; print(secrets.token_urlsafe(48))"
   @"
@@ -29,7 +30,8 @@ PROFILE=all
 CASE_DB_URL=sqlite:///./data/case.db
 INTAKE_DB_URL=sqlite:///./data/intake.db
 INTAKE_HMAC_KEY=$hmac
-INTAKE_ENC_KEY=$enc
+INTAKE_SEAL_KEY=$seal
+INTAKE_OPEN_KEY=$open
 JWT_SECRET=$jwt
 STORAGE_BACKEND=local
 EVIDENCE_DIR=./data/evidence
