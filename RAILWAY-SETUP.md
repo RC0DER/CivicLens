@@ -73,6 +73,7 @@ resolves them, so no database password is ever pasted by hand.
 ```
 ENV=production
 PROFILE=public
+PORT=8000
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 INTAKE_DATABASE_URL=${{IntakePostgres.DATABASE_URL}}
 JWT_SECRET=<JWT_SECRET>
@@ -96,6 +97,7 @@ METRICS_TOKEN=<METRICS_TOKEN>
 ```
 ENV=production
 PROFILE=dept
+PORT=8000
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 JWT_SECRET=<JWT_SECRET>
 SERVE_FRONTEND=true
@@ -120,6 +122,7 @@ rather than quietly exposing reporters.
 ```
 ENV=production
 PROFILE=investigator
+PORT=8000
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 INTAKE_DATABASE_URL=${{IntakePostgres.DATABASE_URL}}
 JWT_SECRET=<JWT_SECRET>
@@ -155,8 +158,12 @@ origin here instead.
 
 ## 6 · Give the public service a domain
 
-**civiclens-public → Settings → Networking → Generate Domain.** That URL is the
-citizen-facing site.
+**civiclens-public → Settings → Networking → Generate Domain.** Railway asks
+which port the app listens on: enter **8000**, matching the `PORT=8000` in the
+variables above. The URL appears in that panel once the deploy succeeds - it
+does not exist before the first successful build.
+
+That URL is the citizen-facing site.
 
 Do the same for the other two only if officers need them from outside your
 network. If you add a custom domain later, update `TRUSTED_HOSTS` and
